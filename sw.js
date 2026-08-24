@@ -1,13 +1,12 @@
-const CACHE_NAME = 'ca-dmv-v2';
+const CACHE_NAME = 'ca-dmv-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/styles.css',
   './manifest.json',
+  './js/apps-data.js',
   './js/questions.js',
   './js/illustrations.js',
-  './js/quiz.js',
-  './js/ui.js',
   './js/app.js'
 ];
 

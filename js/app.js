@@ -1,11 +1,14 @@
-// California DMV Interactive Question & Study System
+// Gavin's Applications Directory & California DMV Interactive Question System
 document.addEventListener('DOMContentLoaded', () => {
     // --- State Initialization ---
     const allQuestions = typeof QUESTIONS !== 'undefined' ? QUESTIONS : [];
+    const appsDirectory = typeof APPS_DIRECTORY !== 'undefined' ? APPS_DIRECTORY : [];
+    
     let activeCategory = 'all';
     let currentFiltered = [...allQuestions];
     let currentIndex = 0;
     let viewMode = 'single'; // 'single' | 'list'
+    let currentAppView = 'directory'; // 'directory' | 'dmv'
 
     // Load persisted state
     let answers = {};
@@ -56,7 +59,117 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
     initTheme();
 
-    // --- Helper Functions ---
+    // --- View Routing (Directory vs DMV) ---
+    const switchAppView = (targetView) => {
+        currentAppView = targetView;
+        const dirView = document.getElementById('view-directory');
+        const dmvView = document.getElementById('view-dmv');
+        const navDirBtn = document.getElementById('nav-btn-directory');
+        const navDmvBtn = document.getElementById('nav-btn-dmv');
+        const scoreCounter = document.getElementById('score-counter');
+        const mapBtn = document.getElementById('btn-toggle-grid');
+        const viewToggleBtn = document.getElementById('btn-toggle-view');
+
+        if (targetView === 'directory') {
+            if (dirView) dirView.style.display = 'block';
+            if (dmvView) dmvView.style.display = 'none';
+            navDirBtn?.classList.add('active');
+            navDmvBtn?.classList.remove('active');
+
+            if (scoreCounter) scoreCounter.style.display = 'none';
+            if (mapBtn) mapBtn.style.display = 'none';
+            if (viewToggleBtn) viewToggleBtn.style.display = 'none';
+
+            window.location.hash = 'directory';
+            renderDirectory();
+        } else {
+            if (dirView) dirView.style.display = 'none';
+            if (dmvView) dmvView.style.display = 'block';
+            navDirBtn?.classList.remove('active');
+            navDmvBtn?.classList.add('active');
+
+            if (scoreCounter) scoreCounter.style.display = 'inline-flex';
+            if (mapBtn) mapBtn.style.display = 'inline-block';
+            if (viewToggleBtn) viewToggleBtn.style.display = 'inline-block';
+
+            window.location.hash = 'dmv';
+            renderCurrentQuestion();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // --- Render Directory Page ---
+    const renderDirectory = (searchQuery = '') => {
+        const container = document.getElementById('apps-grid-container');
+        const countBadge = document.getElementById('apps-count-badge');
+        if (!container) return;
+
+        let list = appsDirectory;
+        if (searchQuery && searchQuery.trim() !== '') {
+            const q = searchQuery.toLowerCase().trim();
+            list = list.filter(app => 
+                app.title.toLowerCase().includes(q) ||
+                app.description.toLowerCase().includes(q) ||
+                app.tagline.toLowerCase().includes(q) ||
+                app.tags.some(t => t.toLowerCase().includes(q))
+            );
+        }
+
+        if (countBadge) {
+            countBadge.textContent = `${list.length} Apps Available`;
+        }
+
+        if (list.length === 0) {
+            container.innerHTML = `<div class="card" style="text-align:center; grid-column:1/-1;"><p>No applications matched your search.</p></div>`;
+            return;
+        }
+
+        let html = '';
+        list.forEach(app => {
+            let statusClass = 'app-status-live';
+            if (app.statusType === 'active') statusClass = 'app-status-active';
+            else if (app.statusType === 'soon') statusClass = 'app-status-soon';
+
+            const tagsHtml = app.tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+
+            html += `
+                <div class="app-card" data-id="${app.id}" data-action="${app.actionType}" data-url="${app.actionUrl}">
+                    <div class="app-card-header">
+                        <span class="app-card-icon">${app.icon}</span>
+                        <span class="app-status-badge ${statusClass}">${app.status}</span>
+                    </div>
+                    <h3 class="app-card-title">${app.title}</h3>
+                    <div class="app-card-tagline">${app.tagline}</div>
+                    <p class="app-card-desc">${app.description}</p>
+                    <div class="app-tags" style="margin-bottom:14px;">${tagsHtml}</div>
+                    <div class="app-card-footer">
+                        <span class="app-card-category">${app.category}</span>
+                        <span class="app-card-cta">
+                            ${app.actionType === 'internal' ? 'Open App →' : (app.actionType === 'external' ? 'Visit ↗' : 'Coming Soon')}
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Card Click Handlers
+        container.querySelectorAll('.app-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const action = card.dataset.action;
+                const url = card.dataset.url;
+                if (action === 'internal') {
+                    switchAppView('dmv');
+                } else if (action === 'external' && url && url !== '#') {
+                    window.open(url, '_blank', 'noopener');
+                }
+            });
+        });
+    };
+
+    // --- Helper Functions for DMV App ---
     const saveState = () => {
         try {
             localStorage.setItem('dmv-q-answers', JSON.stringify(answers));
@@ -240,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Update Prev / Next button disabled state
+        // Update Prev / Next button state
         const prevBtn = document.getElementById('btn-prev-q');
         const nextBtn = document.getElementById('btn-next-q');
         if (prevBtn) prevBtn.disabled = currentIndex <= 0;
@@ -260,7 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const question = getCurrentQuestion();
         if (!question) return;
 
-        // If already answered, do not re-answer unless reset
         if (answers[question.id]) return;
 
         const isCorrect = optIdx === question.correctIndex;
@@ -281,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentIndex < currentFiltered.length - 1) {
             currentIndex++;
         } else {
-            currentIndex = 0; // wrap around
+            currentIndex = 0;
         }
         renderCurrentQuestion();
     };
@@ -291,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentIndex > 0) {
             currentIndex--;
         } else {
-            currentIndex = currentFiltered.length - 1; // wrap around to end
+            currentIndex = currentFiltered.length - 1;
         }
         renderCurrentQuestion();
     };
@@ -307,7 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const jumpToQuestionById = (id) => {
-        // If not in current filter, reset to all
         let idx = currentFiltered.findIndex(q => q.id === id);
         if (idx === -1) {
             filterQuestions('all');
@@ -362,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML = '';
         const currentQ = getCurrentQuestion();
 
-        allQuestions.forEach((q, idx) => {
+        allQuestions.forEach((q) => {
             const bubble = document.createElement('button');
             bubble.className = 'q-bubble';
             bubble.textContent = q.id.toString();
@@ -393,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.style.display = 'none';
     };
 
-    // --- Full List / Study Mode View ---
+    // --- Full List View ---
     const renderFullList = (query = '') => {
         const container = document.getElementById('full-questions-container');
         const countEl = document.getElementById('list-count-display');
@@ -463,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
             viewMode = 'list';
             if (singleView) singleView.style.display = 'none';
             if (listView) listView.style.display = 'block';
-            if (toggleBtnText) toggleBtnText.textContent = '🎯 Single Question';
+            if (toggleBtnText) toggleBtnText.textContent = '🎯 Single View';
             renderFullList();
         } else {
             viewMode = 'single';
@@ -474,17 +585,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Event Listeners Setup ---
-    document.getElementById('brand-home')?.addEventListener('click', () => {
-        filterQuestions('all');
-        if (viewMode === 'list') toggleViewMode();
+    // --- Global Navigation & Event Listeners ---
+    document.getElementById('brand-home')?.addEventListener('click', () => switchAppView('directory'));
+    document.getElementById('nav-btn-directory')?.addEventListener('click', () => switchAppView('directory'));
+    document.getElementById('nav-btn-dmv')?.addEventListener('click', () => switchAppView('dmv'));
+    document.getElementById('btn-back-to-directory')?.addEventListener('click', () => switchAppView('directory'));
+    document.getElementById('footer-dmv-link')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchAppView('dmv');
+    });
+
+    document.getElementById('featured-dmv-card')?.addEventListener('click', () => switchAppView('dmv'));
+
+    document.getElementById('dir-search-input')?.addEventListener('input', (e) => {
+        renderDirectory(e.target.value);
     });
 
     document.getElementById('category-pills')?.addEventListener('click', (e) => {
         const pill = e.target.closest('.cat-pill');
-        if (pill) {
-            filterQuestions(pill.dataset.cat);
-        }
+        if (pill) filterQuestions(pill.dataset.cat);
     });
 
     document.getElementById('q-options')?.addEventListener('click', (e) => {
@@ -516,7 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     });
 
-    // --- Keyboard Navigation (Desktop / Web) ---
+    // --- Keyboard Navigation ---
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
@@ -526,14 +645,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (viewMode === 'single') {
-            // Option 1-4
+        if (currentAppView === 'dmv' && viewMode === 'single') {
             if (['1', '2', '3', '4'].includes(e.key)) {
                 const optIdx = parseInt(e.key, 10) - 1;
                 handleSelectOption(optIdx);
                 e.preventDefault();
             }
-            // Option A-D
             else if (['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].includes(e.key)) {
                 const keyMap = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
                 const optIdx = keyMap[e.key];
@@ -542,27 +659,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                 }
             }
-            // Next Question
             else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
                 nextQuestion();
                 e.preventDefault();
             }
-            // Previous Question
             else if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
                 prevQuestion();
                 e.preventDefault();
             }
-            // Bookmark Flag
             else if (e.key === 'f' || e.key === 'F' || e.key === 'b' || e.key === 'B') {
                 toggleBookmarkCurrent();
                 e.preventDefault();
             }
-            // Random Question
             else if (e.key === 'r' || e.key === 'R') {
                 randomQuestion();
                 e.preventDefault();
             }
-            // Open Map
             else if (e.key === 'm' || e.key === 'M') {
                 openQuestionMap();
                 e.preventDefault();
@@ -570,7 +682,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Initial Render - Restore exact category and question position
+    // --- Handle Initial Hash Routing & Render ---
+    const initialHash = window.location.hash;
+    if (initialHash === '#dmv' || window.location.pathname.includes('/dmv')) {
+        switchAppView('dmv');
+    } else {
+        switchAppView('directory');
+    }
+
+    // Initialize DMV state
     if (savedCategory && savedCategory !== 'all') {
         filterQuestions(savedCategory, savedLastId ? parseInt(savedLastId, 10) : null);
     } else {
@@ -580,6 +700,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateScoreStats();
         updateCategoryPillsUI();
-        renderCurrentQuestion();
     }
 });
