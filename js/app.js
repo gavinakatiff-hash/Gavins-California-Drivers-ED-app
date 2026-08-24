@@ -313,15 +313,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Banner Status
         if (fbBanner) {
             if (isCorrect) {
-                fbBanner.className = 'fb-hero-banner fb-hero-correct';
+                fbBanner.className = 'compact-status-banner fb-hero-correct';
                 if (fbIcon) fbIcon.textContent = '🎉';
                 if (fbTitle) fbTitle.textContent = 'Correct!';
-                if (fbSubtitle) fbSubtitle.textContent = 'Awesome! You mastered this California DMV rule.';
+                if (fbSubtitle) fbSubtitle.textContent = 'California DMV Rule Mastered';
             } else {
-                fbBanner.className = 'fb-hero-banner fb-hero-wrong';
+                fbBanner.className = 'compact-status-banner fb-hero-wrong';
                 if (fbIcon) fbIcon.textContent = '❌';
                 if (fbTitle) fbTitle.textContent = 'Incorrect';
-                if (fbSubtitle) fbSubtitle.textContent = "Don't worry! Review the handbook rule below.";
+                if (fbSubtitle) fbSubtitle.textContent = 'Review the handbook rule below:';
             }
         }
 
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fbUserRow && fbUserText) {
             const userChoiceText = question.options[userSelectedIdx] || 'None';
             fbUserText.textContent = `${userSelectedIdx + 1}. ${userChoiceText}`;
-            fbUserRow.className = `fb-choice-box ${isCorrect ? 'user-correct' : 'user-wrong'}`;
+            fbUserRow.className = `compact-choice-row ${isCorrect ? 'user-correct' : 'user-wrong'}`;
         }
 
         // Correct Answer (shown if wrong)
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isCorrect) {
                 const correctChoiceText = question.options[question.correctIndex];
                 fbCorrectText.textContent = `${question.correctIndex + 1}. ${correctChoiceText}`;
-                fbCorrectRow.style.display = 'block';
+                fbCorrectRow.style.display = 'flex';
             } else {
                 fbCorrectRow.style.display = 'none';
             }

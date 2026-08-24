@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#09090B">
     <meta name="description" content="Gavin's Applications Directory & California DMV Practice Questions Hub.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <link rel="stylesheet" href="css/styles.css?v=20260824_v2">
+    <link rel="stylesheet" href="css/styles.css?v=20260824_v3">
     <title>Gavin's Applications Directory & DMV Questions</title>
 </head>
 <body>
@@ -59,7 +59,6 @@
                         <p class="featured-desc">Mobile-first, auto-advancing question system with visual diagrams, instant feedback screens, and live accuracy tracking.</p>
                         <div class="app-tags">
                             <span class="tag">120 Questions</span>
-                            <span class="tag">Mobile Optimized</span>
                             <span class="tag">Zero Scrolling</span>
                             <span class="tag">Adaptive Algorithm</span>
                         </div>
@@ -90,113 +89,101 @@
         </section>
 
         <!-- ========================================== -->
-        <!-- VIEW 2: MOBILE QUESTION & FEEDBACK VIEWS   -->
+        <!-- VIEW 2: ULTRA-COMPRESSED MOBILE DMV VIEWS  -->
         <!-- ========================================== -->
         <section id="view-dmv" class="view-panel" style="display: none;">
             
-            <!-- SUBVIEW A: COMPACT MOBILE QUESTION SCREEN -->
+            <!-- SUBVIEW A: COMPACT MOBILE QUESTION SCREEN (ZERO SCROLL) -->
             <div id="dmv-screen-question" class="dmv-mobile-subview active">
-                <!-- Top Status Bar -->
-                <div class="simplified-top-bar">
+                <div class="compact-top-bar">
                     <button id="btn-back-to-directory" class="btn-back-minimal" title="Back to directory">
                         <span>← Directory</span>
                     </button>
                     
-                    <div class="accuracy-score-pill" id="accuracy-display" title="Your overall accuracy">
-                        <span class="accuracy-label">Accuracy:</span>
+                    <div class="accuracy-score-pill" id="accuracy-display">
+                        <span class="accuracy-label">Acc:</span>
                         <span id="accuracy-percentage" class="accuracy-val">100%</span>
                         <span id="accuracy-fraction" class="accuracy-sub">(0/0)</span>
                     </div>
 
                     <div class="minimal-q-progress">
-                        <span id="q-number-badge">1 / 120</span>
+                        <span id="q-number-badge">1/120</span>
                     </div>
                 </div>
 
-                <!-- Pure Question Card -->
-                <div class="mobile-question-card">
-                    <!-- Adaptive Recommendation Tag (Reddit / Focus Question) -->
+                <div class="compact-question-box">
                     <div id="q-adaptive-tag" class="adaptive-badge" style="display: none;"></div>
-
-                    <!-- Visual Illustration -->
                     <div id="q-illustration" class="q-illustration-box"></div>
-
-                    <!-- Question Text -->
-                    <h2 id="q-text" class="question-title">Loading question...</h2>
-
-                    <!-- 4 Option Buttons (Instant Tap) -->
-                    <div id="q-options" class="options-grid"></div>
+                    <h2 id="q-text" class="compact-q-title">Loading question...</h2>
+                    <div id="q-options" class="compact-options-grid"></div>
                 </div>
 
-                <!-- Bottom Bar -->
-                <div class="mobile-bottom-nav">
-                    <button id="btn-prev-q" class="btn-nav btn-prev" title="Previous Question">
-                        <span>← Previous</span>
+                <div class="compact-bottom-nav">
+                    <button id="btn-prev-q" class="btn-compact-nav" title="Previous Question">
+                        <span>← Prev</span>
                     </button>
-                    <button id="btn-skip-q" class="btn-nav btn-skip" title="Skip to next question">
+                    <button id="btn-skip-q" class="btn-compact-nav" title="Skip Question">
                         <span>Skip →</span>
                     </button>
                 </div>
             </div>
 
-            <!-- SUBVIEW B: DEDICATED FULL-SCREEN FEEDBACK SCREEN -->
+            <!-- SUBVIEW B: ULTRA-COMPRESSED FEEDBACK SCREEN (ZERO SCROLL) -->
             <div id="dmv-screen-feedback" class="dmv-mobile-subview" style="display: none;">
-                <!-- Feedback Top Status -->
-                <div class="feedback-top-bar">
+                <div class="compact-top-bar">
                     <button id="btn-feedback-back-to-q" class="btn-back-minimal" title="Review question card">
                         <span>← Back</span>
                     </button>
-                    <div class="accuracy-score-pill" id="feedback-accuracy-pill">
-                        <span class="accuracy-label">Accuracy:</span>
+                    <div class="accuracy-score-pill">
+                        <span class="accuracy-label">Acc:</span>
                         <span id="fb-accuracy-pct" class="accuracy-val">100%</span>
                     </div>
                     <div class="minimal-q-progress">
-                        <span id="fb-q-progress">1 / 120</span>
+                        <span id="fb-q-progress">1/120</span>
                     </div>
                 </div>
 
-                <!-- Feedback Hero Result Card -->
-                <div class="mobile-feedback-card" id="fb-card-container">
+                <div class="compact-feedback-card">
                     <!-- Status Banner -->
-                    <div id="fb-status-banner" class="fb-hero-banner fb-hero-correct">
-                        <span id="fb-hero-icon" class="fb-hero-icon">🎉</span>
-                        <div class="fb-hero-text">
-                            <h2 id="fb-hero-title">Correct!</h2>
-                            <p id="fb-hero-subtitle">Great job! Keep the momentum going.</p>
+                    <div id="fb-status-banner" class="compact-status-banner fb-hero-correct">
+                        <span id="fb-hero-icon" class="compact-hero-icon">🎉</span>
+                        <div class="compact-hero-text">
+                            <span id="fb-hero-title" class="compact-status-title">Correct!</span>
+                            <span id="fb-hero-subtitle" class="compact-status-sub">California DMV Rule Mastered</span>
                         </div>
                     </div>
 
-                    <!-- Answer Breakdown -->
-                    <div class="fb-answers-breakdown">
-                        <div class="fb-q-title" id="fb-question-text"></div>
+                    <!-- Answers Comparison List -->
+                    <div class="compact-answer-breakdown">
+                        <div class="compact-q-summary" id="fb-question-text"></div>
                         
-                        <div class="fb-choice-box" id="fb-user-choice-row">
-                            <span class="fb-choice-label">Your Choice:</span>
-                            <div class="fb-choice-val" id="fb-user-choice-text"></div>
+                        <div id="fb-user-choice-row" class="compact-choice-row">
+                            <span class="compact-tag-label">Your Pick:</span>
+                            <span id="fb-user-choice-text" class="compact-choice-text"></span>
                         </div>
 
-                        <div class="fb-choice-box fb-choice-correct" id="fb-correct-choice-row" style="display: none;">
-                            <span class="fb-choice-label">Correct Answer:</span>
-                            <div class="fb-choice-val" id="fb-correct-choice-text"></div>
+                        <div id="fb-correct-choice-row" class="compact-choice-row correct-row" style="display: none;">
+                            <span class="compact-tag-label">Correct:</span>
+                            <span id="fb-correct-choice-text" class="compact-choice-text"></span>
                         </div>
                     </div>
 
                     <!-- Handbook Explanation -->
-                    <div class="fb-explanation-box">
-                        <div class="fb-exp-header">💡 California Driver Handbook</div>
-                        <p id="fb-explanation-text" class="fb-exp-body"></p>
+                    <div class="compact-explanation-box">
+                        <div class="compact-exp-title">💡 California Driver Handbook:</div>
+                        <div id="fb-explanation-text" class="compact-exp-body"></div>
                     </div>
 
-                    <!-- Reddit Trap Warning Box -->
-                    <div id="fb-reddit-tip" class="reddit-callout-box" style="display: none;"></div>
+                    <!-- Reddit Trap Warning -->
+                    <div id="fb-reddit-tip" class="compact-reddit-box" style="display: none;"></div>
                 </div>
 
-                <!-- Next Action Sticky Bottom Bar (Zero Scrolling Needed) -->
-                <div class="feedback-action-bar">
-                    <button id="btn-retry-from-feedback" class="btn-secondary-feedback" title="Try this question again">
+                <!-- Sticky Bottom Action Button -->
+                <div class="compact-feedback-action-bar">
+                    <button id="btn-retry-from-feedback" class="btn-compact-retry" title="Try question again">
                         <span>🔄 Re-try</span>
                     </button>
-                    <button id="btn-next-from-feedback" class="btn-primary-feedback" title="Advance to next question">
+                    <button id="btn-next-from-feedback" class="btn-compact-next" title="Next Question">
                         <span>Next Question →</span>
                     </button>
                 </div>
@@ -205,11 +192,11 @@
     </main>
 
     <!-- Scripts with Cache Busting -->
-    <script src="js/apps-data.js?v=20260824_v2"></script>
-    <script src="js/questions.js?v=20260824_v2"></script>
-    <script src="js/illustrations.js?v=20260824_v2"></script>
-    <script src="js/animations.js?v=20260824_v2"></script>
-    <script src="js/adaptive-engine.js?v=20260824_v2"></script>
-    <script src="js/app.js?v=20260824_v2"></script>
+    <script src="js/apps-data.js?v=20260824_v3"></script>
+    <script src="js/questions.js?v=20260824_v3"></script>
+    <script src="js/illustrations.js?v=20260824_v3"></script>
+    <script src="js/animations.js?v=20260824_v3"></script>
+    <script src="js/adaptive-engine.js?v=20260824_v3"></script>
+    <script src="js/app.js?v=20260824_v3"></script>
 </body>
 </html>
