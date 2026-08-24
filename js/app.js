@@ -10,17 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load persisted state
     let answers = {};
     let bookmarks = new Set();
+    let savedLastId = null;
+    let savedCategory = 'all';
 
     try {
-        const savedAnswers = localStorage.getItem('dmv-q-answers');
-        if (savedAnswers) answers = JSON.parse(savedAnswers);
-        const savedBookmarks = localStorage.getItem('dmv-q-bookmarks');
-        if (savedBookmarks) bookmarks = new Set(JSON.parse(savedBookmarks));
-        const savedLastId = localStorage.getItem('dmv-q-last-id');
-        if (savedLastId) {
-            const foundIdx = allQuestions.findIndex(q => q.id === parseInt(savedLastId, 10));
-            if (foundIdx !== -1) currentIndex = foundIdx;
-        }
+        const storedAnswers = localStorage.getItem('dmv-q-answers');
+        if (storedAnswers) answers = JSON.parse(storedAnswers);
+        const storedBookmarks = localStorage.getItem('dmv-q-bookmarks');
+        if (storedBookmarks) bookmarks = new Set(JSON.parse(storedBookmarks));
+        savedLastId = localStorage.getItem('dmv-q-last-id');
+        const storedCat = localStorage.getItem('dmv-q-active-cat');
+        if (storedCat) savedCategory = storedCat;
     } catch (e) {
         console.error('Error loading saved state', e);
     }
@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             localStorage.setItem('dmv-q-answers', JSON.stringify(answers));
             localStorage.setItem('dmv-q-bookmarks', JSON.stringify(Array.from(bookmarks)));
+            localStorage.setItem('dmv-q-active-cat', activeCategory);
             const currentQ = getCurrentQuestion();
             if (currentQ) {
                 localStorage.setItem('dmv-q-last-id', currentQ.id.toString());
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const filterQuestions = (cat) => {
+    const filterQuestions = (cat, targetId = null) => {
         activeCategory = cat;
         if (cat === 'all') {
             currentFiltered = [...allQuestions];
@@ -82,8 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
             currentFiltered = allQuestions.filter(q => q.category === cat);
         }
 
-        if (currentFiltered.length === 0) {
-            currentIndex = 0;
+        if (targetId) {
+            const foundIdx = currentFiltered.findIndex(q => q.id === targetId);
+            currentIndex = foundIdx !== -1 ? foundIdx : 0;
         } else {
             currentIndex = 0;
         }
@@ -94,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (viewMode === 'list') {
             renderFullList();
         }
+        saveState();
     };
 
     const getCurrentQuestion = () => {
@@ -567,7 +570,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Initial Render
-    updateScoreStats();
-    renderCurrentQuestion();
+    // Initial Render - Restore exact category and question position
+    if (savedCategory && savedCategory !== 'all') {
+        filterQuestions(savedCategory, savedLastId ? parseInt(savedLastId, 10) : null);
+    } else {
+        if (savedLastId) {
+            const foundIdx = currentFiltered.findIndex(q => q.id === parseInt(savedLastId, 10));
+            if (foundIdx !== -1) currentIndex = foundIdx;
+        }
+        updateScoreStats();
+        updateCategoryPillsUI();
+        renderCurrentQuestion();
+    }
 });
