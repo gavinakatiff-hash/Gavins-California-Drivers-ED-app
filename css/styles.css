@@ -882,6 +882,38 @@ kbd {
   background: var(--surface);
 }
 
+/* Radical Interactive Feedback Animations */
+@keyframes correctPulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.04); box-shadow: 0 0 35px rgba(16, 185, 129, 0.7); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wrongShake {
+  0%, 100% { transform: translateX(0); }
+  15%, 55%, 90% { transform: translateX(-9px); }
+  35%, 75% { transform: translateX(9px); }
+}
+
+@keyframes glowGreen {
+  0% { transform: scale(1); }
+  45% { box-shadow: 0 0 28px rgba(16, 185, 129, 0.9); transform: scale(1.1); border-color: var(--green); color: var(--green); }
+  100% { transform: scale(1); }
+}
+
+.fx-correct-pulse {
+  animation: correctPulse 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+.fx-wrong-shake {
+  animation: wrongShake 0.5s ease-in-out forwards !important;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.6) !important;
+}
+
+.fx-glow-green {
+  animation: glowGreen 0.75s ease-out forwards !important;
+}
+
 @media (max-width: 600px) {
   .simplified-top-bar {
     flex-wrap: wrap;

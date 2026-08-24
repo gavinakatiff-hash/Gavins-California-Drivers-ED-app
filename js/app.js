@@ -315,8 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
     };
 
-    // --- Option Selection Handler (Records into Adaptive Engine) ---
-    const handleSelectOption = (optIdx) => {
+    // --- Option Selection Handler (Records into Adaptive Engine & Triggers Radical FX) ---
+    const handleSelectOption = (optIdx, targetButton = null) => {
         const question = allQuestions[currentIndex];
         if (!question) return;
 
@@ -336,6 +336,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         saveState();
         renderCurrentQuestion();
+
+        // Trigger Radical Animations & Sound Particle Bursts
+        const btn = targetButton || document.querySelector(`.option-btn[data-index="${optIdx}"]`);
+        if (btn && window.RadicalFX) {
+            if (isCorrect) {
+                window.RadicalFX.celebrateCorrect(btn);
+            } else {
+                window.RadicalFX.celebrateWrong(btn);
+            }
+        }
     };
 
     // --- Adaptive Next Question Handler (Weighted Selection) ---
@@ -402,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = e.target.closest('.option-btn');
         if (btn && !btn.disabled) {
             const optIdx = parseInt(btn.dataset.index, 10);
-            handleSelectOption(optIdx);
+            handleSelectOption(optIdx, btn);
         }
     });
 
