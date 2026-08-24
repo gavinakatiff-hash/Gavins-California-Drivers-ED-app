@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#003366">
+    <meta name="description" content="Online California DMV written driver's license practice test and handbook study tool.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <title>California DMV Driver's Practice Test & Study Guide</title>
+</head>
+<body>
+    <!-- Top Web Navigation Bar -->
+    <header class="app-navbar">
+        <div class="nav-container">
+            <div class="nav-brand" id="nav-brand" role="button" tabindex="0">
+                <span class="nav-logo">🐻</span>
+                <div class="brand-text">
+                    <span class="brand-title">CA DMV Test</span>
+                    <span class="brand-tagline">California Driver Prep</span>
+                </div>
+            </div>
+            
+            <nav class="nav-links">
+                <button class="nav-btn active" id="nav-home" title="Go to Home">🏠 Home</button>
+                <button class="nav-btn" id="nav-practice" title="Custom Practice by Category">🎯 Practice</button>
+                <button class="nav-btn" id="nav-exam" title="Simulated Timed DMV Exam">⏱️ Exam Mode</button>
+                <button class="nav-btn" id="nav-study" title="Browse all 120 DMV Questions">📖 Study Bank</button>
+                <button class="nav-btn" id="nav-history" title="View past scores and progress">📊 History</button>
+            </nav>
+
+            <div class="nav-actions">
+                <button id="theme-toggle" class="icon-btn" title="Toggle Light/Dark Theme" aria-label="Toggle theme">🌙</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-content">
+        <!-- Screen: Home Dashboard -->
+        <section id="screen-home" class="screen active">
+            <div class="hero-section">
+                <h1>California DMV Knowledge Practice Test</h1>
+                <p class="subtitle">Updated with 120 official handbook questions, rules of the road, traffic signs, and realistic exam simulation.</p>
+                
+                <div class="mode-selector-card">
+                    <label class="mode-selector-label">Select Your Test Version:</label>
+                    <div id="mode-toggle" class="segmented-control">
+                        <button id="btn-adult" class="mode-btn selected">
+                            <strong>Adult (18+)</strong>
+                            <small>36 Questions • Need 30 to pass (83%)</small>
+                        </button>
+                        <button id="btn-minor" class="mode-btn">
+                            <strong>Minor (Under 18)</strong>
+                            <small>46 Questions • Need 38 to pass (83%)</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="card action-card action-exam" id="btn-exam-card" role="button" tabindex="0">
+                    <div class="card-icon">⏱️</div>
+                    <div class="card-body">
+                        <h3>Simulated DMV Exam</h3>
+                        <p>Timed, randomized test formatted identically to the actual California DMV knowledge test.</p>
+                        <span class="card-cta">Start Simulation →</span>
+                    </div>
+                </div>
+
+                <div class="card action-card action-practice" id="btn-practice-card" role="button" tabindex="0">
+                    <div class="card-icon">🎯</div>
+                    <div class="card-body">
+                        <h3>Category Practice</h3>
+                        <p>Customize your study session by choosing specific topics like Traffic Signs, Right of Way, or Parking.</p>
+                        <span class="card-cta">Select Categories →</span>
+                    </div>
+                </div>
+
+                <div class="card action-card action-study" id="btn-study-card" role="button" tabindex="0">
+                    <div class="card-icon">📖</div>
+                    <div class="card-body">
+                        <h3>Study Bank (120 Questions)</h3>
+                        <p>Browse, search, and review all 120 questions with answers, explanations, and printable study sheets.</p>
+                        <span class="card-cta">Explore Handbook →</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-secondary">
+                <div id="home-stats" class="card stats-card">
+                    <h3>📈 Your Progress Summary</h3>
+                    <div id="best-score-display" class="stats-content">
+                        <p>Loading stats...</p>
+                    </div>
+                </div>
+
+                <div class="card tips-card">
+                    <h3>💡 Web Keyboard Shortcuts</h3>
+                    <ul class="keyboard-tips">
+                        <li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> or <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> <kbd>D</kbd> : Select answer</li>
+                        <li><kbd>Enter</kbd> or <kbd>Space</kbd> : Advance to next question</li>
+                        <li><kbd>Esc</kbd> : Return to Home screen</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <footer class="disclaimer">
+                <p>⚠️ <strong>Disclaimer:</strong> This independent web study tool is not affiliated with, endorsed by, or sponsored by the California Department of Motor Vehicles (DMV). Based on the official California Driver's Handbook.</p>
+            </footer>
+        </section>
+
+        <!-- Screen: Categories Picker -->
+        <section id="screen-categories" class="screen">
+            <div class="screen-header">
+                <button id="btn-categories-back" class="btn-back">← Back to Dashboard</button>
+                <h2>Select Practice Categories</h2>
+                <p class="section-desc">Pick which areas you'd like to practice, or keep all selected for a comprehensive session.</p>
+            </div>
+            
+            <div class="card category-picker-card">
+                <div id="category-list" class="category-grid"></div>
+                <div class="category-actions">
+                    <button id="btn-start-practice" class="btn-primary btn-large-web">Start Practice Session (Selected Topics)</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen: Quiz / Exam -->
+        <section id="screen-quiz" class="screen">
+            <div class="quiz-top-bar">
+                <div class="quiz-meta-left">
+                    <span id="quiz-progress" class="badge badge-progress">Question 1 of 36</span>
+                    <span id="quiz-category" class="badge badge-category">Traffic Signs</span>
+                </div>
+                <div class="quiz-meta-right">
+                    <span id="quiz-timer" class="timer-badge">⏱️ 0:00</span>
+                    <button id="btn-quit-quiz" class="btn-text-quit" title="Exit to home">✕ Exit</button>
+                </div>
+            </div>
+
+            <div id="progress-bar-container" class="progress-track">
+                <div id="progress-bar-fill" class="progress-fill"></div>
+            </div>
+
+            <div class="quiz-question-card card">
+                <div id="quiz-illustration" class="quiz-illustration-box"></div>
+                <p id="quiz-question" class="question-text"></p>
+                
+                <div id="quiz-options" class="options-container"></div>
+                
+                <div id="quiz-feedback" class="feedback-box" style="display: none;">
+                    <div class="feedback-header">
+                        <span id="feedback-badge" class="badge"></span>
+                        <span class="shortcut-hint">Press <kbd>Enter ↵</kbd> or <kbd>Space</kbd> for Next</span>
+                    </div>
+                    <p id="feedback-text"></p>
+                    <button id="btn-next" class="btn-primary btn-next-question">Next Question →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen: Results -->
+        <section id="screen-results" class="screen">
+            <div class="results-card card">
+                <div id="results-badge-icon" class="results-icon">🎉</div>
+                <h2 id="results-title">Congratulations! You Passed!</h2>
+                <div id="results-score" class="score-number">34 / 36</div>
+                <p id="results-threshold" class="score-threshold"></p>
+                
+                <div id="results-breakdown" class="breakdown-card"></div>
+                
+                <div class="results-actions">
+                    <button id="btn-review" class="btn-primary">📝 Review Missed Questions</button>
+                    <button id="btn-retry" class="btn-secondary">🔄 Try Another Test</button>
+                    <button id="btn-home" class="btn-secondary">🏠 Back to Dashboard</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen: Review Missed Questions -->
+        <section id="screen-review" class="screen">
+            <div class="screen-header">
+                <button id="btn-review-back" class="btn-back">← Back to Results</button>
+                <h2>Review Your Missed Questions</h2>
+                <p class="section-desc">Understand why each answer was correct to ensure you master the material.</p>
+            </div>
+            <div id="review-list" class="review-container"></div>
+        </section>
+
+        <!-- Screen: Study Bank (All 120 Questions Browser) -->
+        <section id="screen-study" class="screen">
+            <div class="screen-header">
+                <div class="study-header-controls">
+                    <div>
+                        <h2>📖 Full Question Bank & Handbook Study</h2>
+                        <p class="section-desc">Search, filter, and study all 120 California DMV questions with explanations.</p>
+                    </div>
+                    <div class="study-header-actions">
+                        <button id="btn-print-study" class="btn-secondary" title="Print or save as PDF">🖨️ Print Study Sheet</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card study-filter-card">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="study-search" placeholder="Search questions, road rules, speed limits, parking..." autocomplete="off">
+                </div>
+                <div class="study-category-pills" id="study-category-filters">
+                    <button class="filter-pill active" data-cat="all">All Topics (120)</button>
+                    <button class="filter-pill" data-cat="Traffic Signs">Traffic Signs</button>
+                    <button class="filter-pill" data-cat="Rules of the Road">Rules of Road</button>
+                    <button class="filter-pill" data-cat="Safe Driving">Safe Driving</button>
+                    <button class="filter-pill" data-cat="Parking">Parking</button>
+                    <button class="filter-pill" data-cat="Right of Way">Right of Way</button>
+                    <button class="filter-pill" data-cat="Emergencies">Emergencies</button>
+                </div>
+            </div>
+
+            <div id="study-question-count" class="study-stats-info">Showing 120 questions</div>
+            <div id="study-list" class="study-list-container"></div>
+        </section>
+
+        <!-- Screen: Score History -->
+        <section id="screen-history" class="screen">
+            <div class="screen-header">
+                <h2>📊 Test Score History</h2>
+                <p class="section-desc">Track your test attempts and improvement over time.</p>
+            </div>
+            <div class="card history-card">
+                <div id="history-content"></div>
+                <div class="history-actions">
+                    <button id="btn-clear-history" class="btn-secondary btn-danger-subtle">Clear History</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/questions.js"></script>
+    <script src="js/illustrations.js"></script>
+    <script src="js/quiz.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
