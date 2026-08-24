@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // User Selected Answer
         if (fbUserRow && fbUserText) {
             const userChoiceText = question.options[userSelectedIdx] || 'None';
-            fbUserText.textContent = `${userSelectedIdx + 1}. ${userChoiceText}`;
+            fbUserText.innerHTML = `<span class="fb-opt-box ${isCorrect ? 'box-correct' : 'box-wrong'}">${userSelectedIdx + 1}</span><span class="fb-opt-text-val">${userChoiceText}</span>`;
             fbUserRow.className = `compact-choice-row ${isCorrect ? 'user-correct' : 'user-wrong'}`;
         }
 
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fbCorrectRow && fbCorrectText) {
             if (!isCorrect) {
                 const correctChoiceText = question.options[question.correctIndex];
-                fbCorrectText.textContent = `${question.correctIndex + 1}. ${correctChoiceText}`;
+                fbCorrectText.innerHTML = `<span class="fb-opt-box box-correct">${question.correctIndex + 1}</span><span class="fb-opt-text-val">${correctChoiceText}</span>`;
                 fbCorrectRow.style.display = 'flex';
             } else {
                 fbCorrectRow.style.display = 'none';
