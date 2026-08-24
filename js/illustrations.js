@@ -11,11 +11,11 @@ const Illustrations = {
             case 1: // Octagon Stop Sign
                 return this.svgSign(`<polygon points="75,20 125,20 160,55 160,105 125,140 75,140 40,105 40,55" fill="#D32F2F" stroke="#FFFFFF" stroke-width="4"/><text x="100" y="88" fill="#FFFFFF" font-size="26" font-weight="900" text-anchor="middle" font-family="Arial, sans-serif">STOP</text>`, "Red Octagon = Complete Stop Required");
             case 2: // Yield Sign
-                return this.svgSign(`<polygon points="40,30 160,30 100,135" fill="#D32F2F"/><polygon points="56,40 144,40 100,118" fill="#FFFFFF"/><text x="100" y="65" fill="#D32F2F" font-size="18" font-weight="900" text-anchor="middle" font-family="Arial, sans-serif">YIELD</text>`, "Downward Triangle = Yield Right-of-Way");
+                return this.svgSign(`<polygon points="40,30 160,30 100,135" fill="#D32F2F"/><polygon points="56,40 144,40 100,118" fill="#FFFFFF"/>`, "Downward Triangle = Yield Right-of-Way");
             case 3: // Pennant No Passing Zone
-                return this.svgSign(`<polygon points="40,30 160,80 40,130" fill="#FBC02D" stroke="#000" stroke-width="3"/><text x="75" y="70" fill="#000" font-size="11" font-weight="800" text-anchor="middle">NO</text><text x="75" y="85" fill="#000" font-size="11" font-weight="800" text-anchor="middle">PASSING</text><text x="75" y="100" fill="#000" font-size="11" font-weight="800" text-anchor="middle">ZONE</text>`, "Pennant (Left Side) = No Passing Zone");
+                return this.svgSign(`<polygon points="40,30 160,80 40,130" fill="#FBC02D" stroke="#000" stroke-width="3"/>`, "Pennant (Left Side) = No Passing Zone");
             case 4: // Diamond Warning
-                return this.svgSign(`<g transform="rotate(45 100 80)"><rect x="55" y="35" width="90" height="90" fill="#FBC02D" stroke="#000" stroke-width="3" rx="4"/></g><text x="100" y="75" font-size="28" text-anchor="middle">⚠️</text><text x="100" y="100" fill="#000" font-size="10" font-weight="800" text-anchor="middle">WARNING</text>`, "Yellow Diamond = Road Hazard Warning");
+                return this.svgSign(`<g transform="rotate(45 100 80)"><rect x="55" y="35" width="90" height="90" fill="#FBC02D" stroke="#000" stroke-width="3" rx="4"/></g><text x="100" y="75" font-size="28" text-anchor="middle">⚠️</text>`, "Yellow Diamond = Road Hazard Warning");
             case 5: // White Regulatory Sign
                 return this.svgSign(`<rect x="60" y="20" width="80" height="110" fill="#FFFFFF" stroke="#000000" stroke-width="3" rx="4"/><text x="100" y="45" fill="#000" font-size="10" font-weight="800" text-anchor="middle">SPEED</text><text x="100" y="60" fill="#000" font-size="10" font-weight="800" text-anchor="middle">LIMIT</text><text x="100" y="105" fill="#000" font-size="36" font-weight="900" text-anchor="middle">65</text>`, "White Rectangle = Regulatory Traffic Law");
             case 6: // Green Guide Sign
@@ -27,7 +27,7 @@ const Illustrations = {
             case 9: // Orange Construction Sign
                 return this.svgSign(`<g transform="rotate(45 100 80)"><rect x="55" y="35" width="90" height="90" fill="#FF6D00" stroke="#000" stroke-width="3" rx="4"/></g><text x="100" y="72" font-size="22" text-anchor="middle">🚧</text><text x="100" y="95" fill="#000" font-size="9" font-weight="800" text-anchor="middle">ROAD WORK</text><text x="100" y="108" fill="#000" font-size="9" font-weight="800" text-anchor="middle">AHEAD</text>`, "Orange Sign = Construction & Road Work");
             case 10: // School Zone Pentagon
-                return this.svgSign(`<polygon points="100,20 150,55 150,130 50,130 50,55" fill="#CCFF00" stroke="#000" stroke-width="3"/><text x="100" y="70" font-size="24" text-anchor="middle">🚸</text><text x="100" y="100" fill="#000" font-size="10" font-weight="900" text-anchor="middle">SCHOOL</text><text x="100" y="115" fill="#000" font-size="9" font-weight="800" text-anchor="middle">CROSSING</text>`, "5-Sided Pentagon = School Zone Crossing");
+                return this.svgSign(`<polygon points="100,20 150,55 150,130 50,130 50,55" fill="#CCFF00" stroke="#000" stroke-width="3"/><text x="100" y="70" font-size="24" text-anchor="middle">🚸</text>`, "5-Sided Pentagon = School Zone Crossing");
             case 11: // Railroad Crossing Round Sign
                 return this.svgSign(`<circle cx="100" cy="80" r="55" fill="#FBC02D" stroke="#000" stroke-width="4"/><line x1="60" y1="40" x2="140" y2="120" stroke="#000" stroke-width="6"/><line x1="60" y1="120" x2="140" y2="40" stroke="#000" stroke-width="6"/><text x="68" y="88" fill="#000" font-size="22" font-weight="900" text-anchor="middle">R</text><text x="132" y="88" fill="#000" font-size="22" font-weight="900" text-anchor="middle">R</text>`, "Round Yellow RXR = Railroad Crossing Ahead");
             case 12: // Red Circle with Slash (Prohibition)
@@ -272,7 +272,6 @@ const Illustrations = {
                     <rect width="200" height="160" fill="none"/>
                     ${innerContent}
                 </svg>
-                ${caption ? `<span class="q-svg-caption">${caption}</span>` : ''}
             </div>
         `;
     },
@@ -287,7 +286,6 @@ const Illustrations = {
                     <circle cx="100" cy="120" r="16" fill="${activeColor === 'green' ? '#00E676' : '#37474F'}"/>
                     ${isFlashing ? `<circle cx="100" cy="${activeColor === 'red' ? 40 : 80}" r="22" fill="none" stroke="#FFEB3B" stroke-width="2" stroke-dasharray="4,4"/>` : ''}
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -301,7 +299,6 @@ const Illustrations = {
                     <circle cx="100" cy="80" r="20" fill="#263238"/>
                     <path d="M108,68 L92,80 L108,92 M92,80 L115,80" fill="none" stroke="${hex}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -374,7 +371,6 @@ const Illustrations = {
                         <rect x="125" y="30" width="24" height="42" rx="4" fill="#E53935"/>
                     ` : ''}
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -403,7 +399,6 @@ const Illustrations = {
                         <polygon points="35,60 25,65 35,70" fill="#00E676"/>
                     `}
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -426,7 +421,6 @@ const Illustrations = {
                     <rect x="104" y="130" width="16" height="25" rx="3" fill="#1565C0"/>
                     <text x="100" y="85" fill="#FFF" font-size="8" font-weight="700" text-anchor="middle">YIELD</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -440,7 +434,6 @@ const Illustrations = {
                     <text x="100" y="60" fill="#000" font-size="10" font-weight="800" text-anchor="middle">LIMIT</text>
                     <text x="100" y="${typeof speed === 'number' ? '105' : '95'}" fill="#000" font-size="${typeof speed === 'number' ? '36' : '14'}" font-weight="900" text-anchor="middle">${speed}</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -481,7 +474,6 @@ const Illustrations = {
                     <rect x="71" y="100" width="8" height="18" rx="2" fill="#212121"/>
                     <rect x="126" y="100" width="8" height="18" rx="2" fill="#212121"/>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -500,7 +492,6 @@ const Illustrations = {
                     <rect x="0" y="90" width="200" height="70" fill="#455A64"/>
                     <rect x="60" y="105" width="80" height="40" rx="6" fill="#1565C0"/>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -521,7 +512,6 @@ const Illustrations = {
                     <text x="100" y="60" fill="#D32F2F" font-size="8" font-weight="900" text-anchor="middle">NO-ZONE</text>
                     <text x="100" y="145" fill="#FFF" font-size="8" font-weight="700" text-anchor="middle">NO-ZONE (Rear)</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -538,7 +528,6 @@ const Illustrations = {
                     <rect x="135" y="70" width="55" height="22" rx="4" fill="#00E676"/>
                     <text x="162" y="85" fill="#000" font-size="10" font-weight="900" text-anchor="middle">3 SECONDS</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -560,7 +549,6 @@ const Illustrations = {
                     <path d="M130,115 Q150,105 160,115" stroke="#4FC3F7" stroke-width="3" fill="none"/>
                     <text x="100" y="40" fill="#4FC3F7" font-size="14" font-weight="900" text-anchor="middle">WATER FILM (NO TRACTION)</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -580,7 +568,6 @@ const Illustrations = {
                     <text x="135" y="85" fill="#FFF" font-size="11" font-weight="800">LOW BEAMS</text>
                     <text x="135" y="100" fill="#81C784" font-size="10" font-weight="700">✓ Penetrates Fog</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -596,7 +583,6 @@ const Illustrations = {
                     <text x="100" y="55" fill="#FFD600" font-size="12" font-weight="900" text-anchor="middle">500 FT ONCOMING</text>
                     <text x="100" y="70" fill="#FFF" font-size="10" font-weight="700" text-anchor="middle">Dim High Beams</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -611,7 +597,6 @@ const Illustrations = {
                     <text x="120" y="50" fill="#FFF" font-size="11" font-weight="800">STOPPING DISTANCE</text>
                     <text x="120" y="65" fill="#81C784" font-size="9" font-weight="700">Within Headlight Cone</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -626,7 +611,6 @@ const Illustrations = {
                     <text x="100" y="40" fill="#FF5252" font-size="13" font-weight="900" text-anchor="middle">⚠️ TAILGATING HAZARD</text>
                     <text x="100" y="125" fill="#FFF" font-size="10" font-weight="700" text-anchor="middle">No Reaction Time</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -640,7 +624,6 @@ const Illustrations = {
                     <rect x="88" y="55" width="24" height="45" fill="#90CAF9"/>
                     <line x1="58" y1="38" x2="142" y2="122" stroke="#D32F2F" stroke-width="8"/>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -654,7 +637,6 @@ const Illustrations = {
                     <text x="100" y="95" fill="#FF1744" font-size="34" font-weight="900" text-anchor="middle">${bac}</text>
                     <text x="100" y="120" fill="#FFD600" font-size="10" font-weight="700" text-anchor="middle">LEGAL LIMIT</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -672,7 +654,6 @@ const Illustrations = {
                     <text x="100" y="112" fill="#FFD600" font-size="14" font-weight="900" text-anchor="middle">${dist} MINIMUM</text>
                     <rect x="150" y="60" width="40" height="50" rx="4" fill="#1565C0"/>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -691,7 +672,6 @@ const Illustrations = {
                     <rect x="85" y="125" width="30" height="25" rx="3" fill="#1565C0"/>
                     <text x="100" y="25" fill="#00E676" font-size="12" font-weight="900" text-anchor="middle">PEDESTRIAN RIGHT-OF-WAY</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -712,7 +692,6 @@ const Illustrations = {
                     <rect x="135" y="60" width="45" height="30" rx="4" fill="#1565C0"/>
                     <text x="157" y="115" fill="#FFD600" font-size="9" font-weight="800" text-anchor="middle">PULL RIGHT & STOP</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
@@ -764,7 +743,6 @@ const Illustrations = {
                     <text x="100" y="90" fill="#FF5252" font-size="12" font-weight="900" text-anchor="middle">${title}</text>
                     <text x="100" y="115" fill="#FFD600" font-size="10" font-weight="700" text-anchor="middle">${desc}</text>
                 </svg>
-                <span class="q-svg-caption">${caption}</span>
             </div>
         `;
     },
