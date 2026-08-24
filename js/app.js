@@ -1,9 +1,14 @@
-// Gavin's Applications Directory & Simplified DMV Questions
+// Gavin's Applications Directory & Adaptive California DMV Question Engine
 document.addEventListener('DOMContentLoaded', () => {
     // --- State Initialization ---
     const allQuestions = typeof QUESTIONS !== 'undefined' ? QUESTIONS : [];
     const appsDirectory = typeof APPS_DIRECTORY !== 'undefined' ? APPS_DIRECTORY : [];
     
+    // Initialize Adaptive Spaced-Repetition Recommendation Engine
+    const adaptiveEngine = typeof AdaptiveRecommendationEngine !== 'undefined'
+        ? new AdaptiveRecommendationEngine(allQuestions)
+        : null;
+
     let currentIndex = 0;
     let currentAppView = 'directory'; // 'directory' | 'dmv'
 
@@ -169,11 +174,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Live Accuracy Calculation ---
+    // --- Live Accuracy Calculation (Adaptive Stats + Session) ---
     const updateAccuracyDisplay = () => {
-        const totalAnswered = Object.keys(answers).length;
-        const totalCorrect = Object.values(answers).filter(a => a.isCorrect).length;
-        const pct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 100;
+        let pct = 100;
+        let correctCount = 0;
+        let totalCount = 0;
+
+        if (adaptiveEngine) {
+            const stats = adaptiveEngine.getAccuracyStats();
+            pct = stats.percentage;
+            correctCount = stats.correct;
+            totalCount = stats.total;
+        } else {
+            totalCount = Object.keys(answers).length;
+            correctCount = Object.values(answers).filter(a => a.isCorrect).length;
+            pct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 100;
+        }
         
         const pctEl = document.getElementById('accuracy-percentage');
         const fracEl = document.getElementById('accuracy-fraction');
@@ -183,11 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
             pctEl.style.color = pct >= 80 ? 'var(--orange)' : 'var(--red)';
         }
         if (fracEl) {
-            fracEl.textContent = `(${totalCorrect}/${totalAnswered})`;
+            fracEl.textContent = `(${correctCount}/${totalCount})`;
         }
     };
 
-    // --- Render Simplified Question ---
+    // --- Render Simplified Question with Adaptive Tagging ---
     const renderCurrentQuestion = () => {
         const question = allQuestions[currentIndex];
         const numBadge = document.getElementById('q-number-badge');
@@ -195,16 +211,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleEl = document.getElementById('q-text');
         const optionsEl = document.getElementById('q-options');
         const feedbackEl = document.getElementById('q-feedback');
+        const adaptiveTag = document.getElementById('q-adaptive-tag');
+        const redditTipBox = document.getElementById('reddit-tip-box');
 
         if (!question) return;
 
-        // Progress counter (1 / 120)
+        // Progress counter (Question ID)
         if (numBadge) {
-            numBadge.textContent = `${currentIndex + 1} / ${allQuestions.length}`;
+            numBadge.textContent = `Question #${question.id} (of 120)`;
         }
 
         // Live Accuracy
         updateAccuracyDisplay();
+
+        // Adaptive Badge (Focus Question / Reddit Top Missed)
+        if (adaptiveTag && adaptiveEngine) {
+            const info = adaptiveEngine.getQuestionBadgeInfo(question.id);
+            if (info.label) {
+                adaptiveTag.textContent = info.label;
+                adaptiveTag.className = `adaptive-badge ${info.type}`;
+                adaptiveTag.style.display = 'inline-flex';
+            } else {
+                adaptiveTag.style.display = 'none';
+            }
+        }
 
         // Vector Visual Illustration
         if (illuBox && window.Illustrations) {
@@ -244,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Feedback Explanation
+        // Feedback Explanation & Reddit Callout
         const existingAnswer = answers[question.id];
         if (feedbackEl) {
             if (existingAnswer) {
@@ -259,8 +289,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (fExp) {
                     fExp.innerHTML = `<strong>💡 California Driver Handbook:</strong> ${question.explanation}`;
                 }
+
+                // Reddit Trap Advice Callout
+                if (redditTipBox && adaptiveEngine) {
+                    const badgeInfo = adaptiveEngine.getQuestionBadgeInfo(question.id);
+                    if (badgeInfo.tip) {
+                        redditTipBox.innerHTML = `<strong>⚠️ Community Insight:</strong> ${badgeInfo.tip}`;
+                        redditTipBox.style.display = 'block';
+                    } else {
+                        redditTipBox.style.display = 'none';
+                    }
+                }
             } else {
                 feedbackEl.style.display = 'none';
+                if (redditTipBox) redditTipBox.style.display = 'none';
             }
         }
 
@@ -268,18 +310,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = document.getElementById('btn-prev-q');
         const nextBtn = document.getElementById('btn-next-q');
         if (prevBtn) prevBtn.disabled = currentIndex <= 0;
-        if (nextBtn) {
-            if (currentIndex >= allQuestions.length - 1) {
-                nextBtn.textContent = 'First Question ↺';
-            } else {
-                nextBtn.textContent = 'Next Question →';
-            }
-        }
+        if (nextBtn) nextBtn.textContent = 'Next Question →';
 
         saveState();
     };
 
-    // --- Option Selection Handler ---
+    // --- Option Selection Handler (Records into Adaptive Engine) ---
     const handleSelectOption = (optIdx) => {
         const question = allQuestions[currentIndex];
         if (!question) return;
@@ -293,13 +329,35 @@ document.addEventListener('DOMContentLoaded', () => {
             date: Date.now()
         };
 
+        // Record into Adaptive Spaced Repetition Engine
+        if (adaptiveEngine) {
+            adaptiveEngine.recordAttempt(question.id, isCorrect);
+        }
+
         saveState();
         renderCurrentQuestion();
     };
 
-    // --- Navigation Handlers ---
+    // --- Adaptive Next Question Handler (Weighted Selection) ---
     const nextQuestion = () => {
         if (allQuestions.length === 0) return;
+
+        const currentQ = allQuestions[currentIndex];
+        
+        if (adaptiveEngine) {
+            // Adaptive algorithm surfaces questions you got wrong most + Reddit high-yield questions
+            const nextQ = adaptiveEngine.getNextRecommendedQuestion(currentQ ? currentQ.id : null);
+            if (nextQ) {
+                const foundIdx = allQuestions.findIndex(q => q.id === nextQ.id);
+                if (foundIdx !== -1) {
+                    currentIndex = foundIdx;
+                    renderCurrentQuestion();
+                    return;
+                }
+            }
+        }
+
+        // Fallback sequential increment
         if (currentIndex < allQuestions.length - 1) {
             currentIndex++;
         } else {

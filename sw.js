@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ca-dmv-v4';
+const CACHE_NAME = 'ca-dmv-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
   './js/apps-data.js',
   './js/questions.js',
   './js/illustrations.js',
+  './js/adaptive-engine.js',
   './js/app.js'
 ];
 

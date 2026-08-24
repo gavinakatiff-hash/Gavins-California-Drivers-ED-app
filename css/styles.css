@@ -730,6 +730,43 @@ body {
   font-weight: 800;
 }
 
+/* Adaptive Badges & Reddit Callouts */
+.adaptive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.adaptive-badge.mistake {
+  background: var(--red-bg);
+  border: 1px solid var(--red);
+  color: #FF5A5A;
+}
+
+.adaptive-badge.reddit {
+  background: var(--orange-bg);
+  border: 1px solid var(--orange);
+  color: var(--orange);
+}
+
+.reddit-callout-box {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 107, 0, 0.08);
+  border-left: 3px solid var(--orange);
+  font-size: 0.9rem;
+  color: var(--orange);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .feedback-badge-pill {
   font-size: 0.85rem;
 }
