@@ -236,8 +236,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleEl = document.getElementById('q-text');
         const optionsEl = document.getElementById('q-options');
         const adaptiveTag = document.getElementById('q-adaptive-tag');
+        const card = document.querySelector('.compact-question-box');
 
         if (!question) return;
+
+        // Reset any fly up or crumble animations from previous question
+        if (card) {
+            card.classList.remove('fx-fly-up-card');
+        }
 
         // Progress counter
         if (numBadge) numBadge.textContent = `#${question.id} / 120`;

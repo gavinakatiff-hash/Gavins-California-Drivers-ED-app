@@ -42,9 +42,16 @@ class RadicalFX {
         const originX = rect.left + rect.width / 2;
         const originY = rect.top + rect.height / 2;
 
-        // Button spring expansion
-        buttonElement.classList.add('fx-correct-pulse');
-        setTimeout(() => buttonElement.classList.remove('fx-correct-pulse'), 600);
+        // 🚀 1. FLY ALL QUESTIONS UPWARD!
+        const allOptionBtns = document.querySelectorAll('.compact-options-grid .option-btn');
+        allOptionBtns.forEach((btn, idx) => {
+            btn.classList.add(`fx-fly-up-${idx % 4}`);
+        });
+
+        const card = document.querySelector('.compact-question-box');
+        if (card) {
+            card.classList.add('fx-fly-up-card');
+        }
 
         // Accuracy Pill glow
         const accPill = document.getElementById('accuracy-display');
@@ -53,10 +60,10 @@ class RadicalFX {
             setTimeout(() => accPill.classList.remove('fx-glow-green'), 800);
         }
 
-        // 🎆 1. FIRE MEGA SPARKS & CONFETTI FROM ALL FOUR CORNERS!
+        // 🎆 2. FIRE MEGA SPARKS & CONFETTI FROM ALL FOUR CORNERS!
         this.launchFourCornerMegaSparks(true);
 
-        // 🎆 2. Button Center Starburst
+        // 🎆 3. Button Center Starburst
         this.spawnParticleBurst(originX, originY, 35, true);
 
         // Floating celebration banner
@@ -80,11 +87,13 @@ class RadicalFX {
         const originX = rect.left + rect.width / 2;
         const originY = rect.top + rect.height / 2;
 
-        // Button aggressive shake
-        buttonElement.classList.add('fx-wrong-shake');
-        setTimeout(() => buttonElement.classList.remove('fx-wrong-shake'), 600);
+        // 💥 1. UNSYNCHRONIZED CHAOTIC SHAKE AND FALL DOWNWARD TO BOTTOM!
+        const allOptionBtns = document.querySelectorAll('.compact-options-grid .option-btn');
+        allOptionBtns.forEach((btn, idx) => {
+            btn.classList.add(`fx-shake-fall-${idx % 4}`);
+        });
 
-        // 💥 FIRE MEGA RED SPARKS FROM ALL FOUR CORNERS!
+        // 💥 2. FIRE MEGA RED SPARKS FROM ALL FOUR CORNERS!
         this.launchFourCornerMegaSparks(false);
 
         // Button spark burst

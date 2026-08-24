@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ca-dmv-v8';
+const CACHE_NAME = 'ca-dmv-v9';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
