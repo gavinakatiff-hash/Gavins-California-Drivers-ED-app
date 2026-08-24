@@ -1,16 +1,36 @@
+// California DMV Interactive Question & Study System
 document.addEventListener('DOMContentLoaded', () => {
-    let currentMode = 'adult';
-    let quizSession = null;
-    let timerInterval = null;
-    let studyCategory = 'all';
-    let studySearch = '';
+    // --- State Initialization ---
+    const allQuestions = typeof QUESTIONS !== 'undefined' ? QUESTIONS : [];
+    let activeCategory = 'all';
+    let currentFiltered = [...allQuestions];
+    let currentIndex = 0;
+    let viewMode = 'single'; // 'single' | 'list'
 
-    // Register service worker if available
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+    // Load persisted state
+    let answers = {};
+    let bookmarks = new Set();
+
+    try {
+        const savedAnswers = localStorage.getItem('dmv-q-answers');
+        if (savedAnswers) answers = JSON.parse(savedAnswers);
+        const savedBookmarks = localStorage.getItem('dmv-q-bookmarks');
+        if (savedBookmarks) bookmarks = new Set(JSON.parse(savedBookmarks));
+        const savedLastId = localStorage.getItem('dmv-q-last-id');
+        if (savedLastId) {
+            const foundIdx = allQuestions.findIndex(q => q.id === parseInt(savedLastId, 10));
+            if (foundIdx !== -1) currentIndex = foundIdx;
+        }
+    } catch (e) {
+        console.error('Error loading saved state', e);
     }
 
-    // Theme Management
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed:', err));
+    }
+
+    // --- Theme Management ---
     const initTheme = () => {
         const savedTheme = localStorage.getItem('dmv-theme');
         const themeBtn = document.getElementById('theme-toggle');
@@ -36,334 +56,518 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
     initTheme();
 
-    const updateHomeStats = () => {
-        const best = window.ScoreManager.getBestScore(currentMode);
-        window.UI.renderHome(best);
-    };
-
-    const updateModeButtons = () => {
-        const btnAdult = document.getElementById('btn-adult');
-        const btnMinor = document.getElementById('btn-minor');
-        if (btnAdult && btnMinor) {
-            if (currentMode === 'adult') {
-                btnAdult.classList.add('selected');
-                btnMinor.classList.remove('selected');
-            } else {
-                btnMinor.classList.add('selected');
-                btnAdult.classList.remove('selected');
+    // --- Helper Functions ---
+    const saveState = () => {
+        try {
+            localStorage.setItem('dmv-q-answers', JSON.stringify(answers));
+            localStorage.setItem('dmv-q-bookmarks', JSON.stringify(Array.from(bookmarks)));
+            const currentQ = getCurrentQuestion();
+            if (currentQ) {
+                localStorage.setItem('dmv-q-last-id', currentQ.id.toString());
             }
+        } catch (e) {
+            console.error('Error saving state', e);
         }
     };
 
-    const startTimer = () => {
-        stopTimer();
-        timerInterval = setInterval(() => {
-            if (quizSession) {
-                window.UI.updateTimer(quizSession.getTimeElapsed());
-            }
-        }, 1000);
-    };
+    const filterQuestions = (cat) => {
+        activeCategory = cat;
+        if (cat === 'all') {
+            currentFiltered = [...allQuestions];
+        } else if (cat === 'bookmarked') {
+            currentFiltered = allQuestions.filter(q => bookmarks.has(q.id));
+        } else if (cat === 'missed') {
+            currentFiltered = allQuestions.filter(q => answers[q.id] && !answers[q.id].isCorrect);
+        } else {
+            currentFiltered = allQuestions.filter(q => q.category === cat);
+        }
 
-    const stopTimer = () => {
-        if (timerInterval) {
-            clearInterval(timerInterval);
-            timerInterval = null;
+        if (currentFiltered.length === 0) {
+            currentIndex = 0;
+        } else {
+            currentIndex = 0;
+        }
+
+        updateCategoryPillsUI();
+        updateScoreStats();
+        renderCurrentQuestion();
+        if (viewMode === 'list') {
+            renderFullList();
         }
     };
 
-    const endQuiz = () => {
-        stopTimer();
-        const results = quizSession.getResults();
-        window.ScoreManager.saveScore(currentMode, results.score, results.total);
-        window.UI.renderResults(results);
-        window.UI.showScreen('screen-results');
+    const getCurrentQuestion = () => {
+        if (currentFiltered.length === 0) return null;
+        return currentFiltered[currentIndex] || currentFiltered[0];
     };
 
-    const getCategoriesData = () => {
-        const map = new Map();
-        if (typeof QUESTIONS !== 'undefined') {
-            QUESTIONS.forEach(q => {
-                if (!map.has(q.category)) {
-                    map.set(q.category, 0);
-                }
-                map.set(q.category, map.get(q.category) + 1);
-            });
-        }
-        return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
-    };
-
-    const startExamMode = () => {
-        if (typeof QUESTIONS === 'undefined') return;
-        quizSession = new window.QuizSession(QUESTIONS, currentMode);
-        quizSession.start(null, true);
-        window.UI.renderQuiz(quizSession.getCurrentQuestion(), quizSession.getProgress(), quizSession.getTimeElapsed(), true);
-        window.UI.showScreen('screen-quiz');
-        startTimer();
-    };
-
-    const startPracticeMode = () => {
-        const cats = getCategoriesData();
-        window.UI.renderCategories(cats);
-        window.UI.showScreen('screen-categories');
-    };
-
-    const showStudyBank = () => {
-        if (typeof QUESTIONS === 'undefined') return;
-        window.UI.renderStudyBank(QUESTIONS, studyCategory, studySearch);
-        window.UI.showScreen('screen-study');
-    };
-
-    const showHistory = () => {
-        const scores = window.ScoreManager.getRecentScores(100);
-        window.UI.renderHistory(scores);
-        window.UI.showScreen('screen-history');
-    };
-
-    // Navigation bar routing
-    document.getElementById('nav-brand')?.addEventListener('click', () => {
-        stopTimer();
-        updateHomeStats();
-        window.UI.showScreen('screen-home');
-    });
-
-    document.getElementById('nav-home')?.addEventListener('click', () => {
-        stopTimer();
-        updateHomeStats();
-        window.UI.showScreen('screen-home');
-    });
-
-    document.getElementById('nav-practice')?.addEventListener('click', () => {
-        stopTimer();
-        startPracticeMode();
-    });
-
-    document.getElementById('nav-exam')?.addEventListener('click', () => {
-        startExamMode();
-    });
-
-    document.getElementById('nav-study')?.addEventListener('click', () => {
-        stopTimer();
-        showStudyBank();
-    });
-
-    document.getElementById('nav-history')?.addEventListener('click', () => {
-        stopTimer();
-        showHistory();
-    });
-
-    // Dashboard Cards & Mode buttons
-    document.getElementById('btn-adult')?.addEventListener('click', () => {
-        currentMode = 'adult';
-        updateModeButtons();
-        updateHomeStats();
-    });
-
-    document.getElementById('btn-minor')?.addEventListener('click', () => {
-        currentMode = 'minor';
-        updateModeButtons();
-        updateHomeStats();
-    });
-
-    document.getElementById('btn-exam-card')?.addEventListener('click', startExamMode);
-    document.getElementById('btn-practice-card')?.addEventListener('click', startPracticeMode);
-    document.getElementById('btn-study-card')?.addEventListener('click', showStudyBank);
-
-    // Categories Screen
-    document.getElementById('btn-categories-back')?.addEventListener('click', () => {
-        window.UI.showScreen('screen-home');
-    });
-
-    document.getElementById('btn-start-practice')?.addEventListener('click', () => {
-        if (typeof QUESTIONS === 'undefined') return;
-        const cbs = document.querySelectorAll('.cb-category:checked');
-        const selectedCategories = Array.from(cbs).map(cb => cb.value);
+    const updateScoreStats = () => {
+        const totalAnswered = Object.keys(answers).length;
+        const totalCorrect = Object.values(answers).filter(a => a.isCorrect).length;
+        const pct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
         
-        if (selectedCategories.length === 0) {
-            alert('Please select at least one category to practice!');
+        const scoreEl = document.getElementById('score-text');
+        if (scoreEl) {
+            scoreEl.textContent = `${totalCorrect} / ${totalAnswered} (${pct}%)`;
+        }
+
+        const bCountEl = document.getElementById('bookmark-count');
+        if (bCountEl) bCountEl.textContent = bookmarks.size.toString();
+
+        const missedCount = allQuestions.filter(q => answers[q.id] && !answers[q.id].isCorrect).length;
+        const mCountEl = document.getElementById('missed-count');
+        if (mCountEl) mCountEl.textContent = missedCount.toString();
+    };
+
+    const updateCategoryPillsUI = () => {
+        document.querySelectorAll('#category-pills .cat-pill').forEach(pill => {
+            if (pill.dataset.cat === activeCategory) {
+                pill.classList.add('active');
+                pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else {
+                pill.classList.remove('active');
+            }
+        });
+    };
+
+    // --- Render Single Question ---
+    const renderCurrentQuestion = () => {
+        const question = getCurrentQuestion();
+        const numBadge = document.getElementById('q-number-badge');
+        const catBadge = document.getElementById('q-category-badge');
+        const illuBox = document.getElementById('q-illustration');
+        const titleEl = document.getElementById('q-text');
+        const optionsEl = document.getElementById('q-options');
+        const feedbackEl = document.getElementById('q-feedback');
+        const bookmarkBtn = document.getElementById('btn-bookmark');
+        const bookmarkIcon = document.getElementById('bookmark-icon');
+        const bookmarkLabel = document.getElementById('bookmark-label');
+
+        if (!question) {
+            if (numBadge) numBadge.textContent = '0 Questions';
+            if (catBadge) catBadge.textContent = activeCategory;
+            if (illuBox) illuBox.innerHTML = '';
+            if (titleEl) titleEl.textContent = activeCategory === 'bookmarked' 
+                ? 'No flagged questions yet. Click the ⭐ Bookmark button on any question to add it here.'
+                : (activeCategory === 'missed' 
+                    ? 'No missed questions yet! Great job!' 
+                    : 'No questions found.');
+            if (optionsEl) optionsEl.innerHTML = '';
+            if (feedbackEl) feedbackEl.style.display = 'none';
             return;
         }
 
-        quizSession = new window.QuizSession(QUESTIONS, currentMode);
-        quizSession.start(selectedCategories, false);
-        window.UI.renderQuiz(quizSession.getCurrentQuestion(), quizSession.getProgress(), quizSession.getTimeElapsed(), false);
-        window.UI.showScreen('screen-quiz');
-    });
-
-    // Quiz Options & Question flow
-    const selectOptionByIndex = (index) => {
-        if (!quizSession) return;
-        const options = document.querySelectorAll('#quiz-options .option');
-        if (options && options[index] && !options[index].disabled) {
-            const result = quizSession.selectAnswer(index);
-            if (result) {
-                window.UI.showAnswer(index, result.correctIndex, result.explanation);
-                if (quizSession.isExamMode) {
-                    window.UI.updateTimer(quizSession.getTimeElapsed());
-                }
-            }
+        // Header Meta
+        if (numBadge) {
+            numBadge.textContent = `Question ${currentIndex + 1} of ${currentFiltered.length} (ID #${question.id})`;
         }
-    };
+        if (catBadge) {
+            catBadge.textContent = question.category;
+        }
 
-    const advanceNextQuestion = () => {
-        if (!quizSession) return;
-        const feedbackEl = document.getElementById('quiz-feedback');
-        // Only advance if answer was submitted (feedback is visible)
-        if (feedbackEl && feedbackEl.style.display !== 'none') {
-            if (quizSession.next()) {
-                window.UI.renderQuiz(
-                    quizSession.getCurrentQuestion(),
-                    quizSession.getProgress(),
-                    quizSession.getTimeElapsed(),
-                    quizSession.isExamMode
-                );
+        // Bookmark state
+        const isBookmarked = bookmarks.has(question.id);
+        if (bookmarkBtn) {
+            if (isBookmarked) {
+                bookmarkBtn.classList.add('bookmarked');
+                if (bookmarkIcon) bookmarkIcon.textContent = '★';
+                if (bookmarkLabel) bookmarkLabel.textContent = 'Flagged';
             } else {
-                endQuiz();
+                bookmarkBtn.classList.remove('bookmarked');
+                if (bookmarkIcon) bookmarkIcon.textContent = '☆';
+                if (bookmarkLabel) bookmarkLabel.textContent = 'Bookmark';
             }
+        }
+
+        // Visual Illustration
+        if (illuBox && window.Illustrations) {
+            illuBox.innerHTML = window.Illustrations.get(question);
+        }
+
+        // Question Title
+        if (titleEl) {
+            titleEl.textContent = question.text;
+        }
+
+        // Options
+        if (optionsEl) {
+            optionsEl.innerHTML = '';
+            const existingAnswer = answers[question.id];
+
+            question.options.forEach((opt, optIdx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.dataset.index = optIdx;
+
+                if (existingAnswer) {
+                    btn.disabled = true;
+                    if (optIdx === question.correctIndex) {
+                        btn.classList.add('correct');
+                    }
+                    if (optIdx === existingAnswer.selectedIndex && !existingAnswer.isCorrect) {
+                        btn.classList.add('incorrect');
+                    }
+                }
+
+                btn.innerHTML = `
+                    <span class="opt-key">${optIdx + 1}</span>
+                    <span class="opt-text">${opt}</span>
+                `;
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        // Feedback Explanation
+        const existingAnswer = answers[question.id];
+        if (feedbackEl) {
+            if (existingAnswer) {
+                feedbackEl.style.display = 'block';
+                const fBadge = document.getElementById('feedback-badge');
+                const fExp = document.getElementById('feedback-explanation');
+                if (fBadge) {
+                    fBadge.textContent = existingAnswer.isCorrect ? '✓ Correct Answer!' : '✗ Incorrect';
+                    fBadge.style.background = existingAnswer.isCorrect ? 'var(--green-bg)' : 'var(--red-bg)';
+                    fBadge.style.color = existingAnswer.isCorrect ? 'var(--green)' : 'var(--red)';
+                }
+                if (fExp) {
+                    fExp.innerHTML = `<strong>💡 California Driver Handbook:</strong> ${question.explanation}`;
+                }
+            } else {
+                feedbackEl.style.display = 'none';
+            }
+        }
+
+        // Update Prev / Next button disabled state
+        const prevBtn = document.getElementById('btn-prev-q');
+        const nextBtn = document.getElementById('btn-next-q');
+        if (prevBtn) prevBtn.disabled = currentIndex <= 0;
+        if (nextBtn) {
+            if (currentIndex >= currentFiltered.length - 1) {
+                nextBtn.textContent = 'First Question ↺';
+            } else {
+                nextBtn.textContent = 'Next Question →';
+            }
+        }
+
+        saveState();
+    };
+
+    // --- Handle Option Selection ---
+    const handleSelectOption = (optIdx) => {
+        const question = getCurrentQuestion();
+        if (!question) return;
+
+        // If already answered, do not re-answer unless reset
+        if (answers[question.id]) return;
+
+        const isCorrect = optIdx === question.correctIndex;
+        answers[question.id] = {
+            selectedIndex: optIdx,
+            isCorrect: isCorrect,
+            date: Date.now()
+        };
+
+        saveState();
+        updateScoreStats();
+        renderCurrentQuestion();
+    };
+
+    // --- Navigation Handlers ---
+    const nextQuestion = () => {
+        if (currentFiltered.length === 0) return;
+        if (currentIndex < currentFiltered.length - 1) {
+            currentIndex++;
+        } else {
+            currentIndex = 0; // wrap around
+        }
+        renderCurrentQuestion();
+    };
+
+    const prevQuestion = () => {
+        if (currentFiltered.length === 0) return;
+        if (currentIndex > 0) {
+            currentIndex--;
+        } else {
+            currentIndex = currentFiltered.length - 1; // wrap around to end
+        }
+        renderCurrentQuestion();
+    };
+
+    const randomQuestion = () => {
+        if (currentFiltered.length <= 1) return;
+        let newIdx;
+        do {
+            newIdx = Math.floor(Math.random() * currentFiltered.length);
+        } while (newIdx === currentIndex);
+        currentIndex = newIdx;
+        renderCurrentQuestion();
+    };
+
+    const jumpToQuestionById = (id) => {
+        // If not in current filter, reset to all
+        let idx = currentFiltered.findIndex(q => q.id === id);
+        if (idx === -1) {
+            filterQuestions('all');
+            idx = currentFiltered.findIndex(q => q.id === id);
+        }
+        if (idx !== -1) {
+            currentIndex = idx;
+            renderCurrentQuestion();
+        }
+        closeQuestionMap();
+    };
+
+    const toggleBookmarkCurrent = () => {
+        const q = getCurrentQuestion();
+        if (!q) return;
+        if (bookmarks.has(q.id)) {
+            bookmarks.delete(q.id);
+        } else {
+            bookmarks.add(q.id);
+        }
+        saveState();
+        updateScoreStats();
+        renderCurrentQuestion();
+    };
+
+    const resetCurrentAnswer = () => {
+        const q = getCurrentQuestion();
+        if (!q) return;
+        delete answers[q.id];
+        saveState();
+        updateScoreStats();
+        renderCurrentQuestion();
+    };
+
+    const clearAllProgress = () => {
+        if (confirm('Are you sure you want to reset all answers and progress?')) {
+            answers = {};
+            bookmarks.clear();
+            localStorage.removeItem('dmv-q-answers');
+            localStorage.removeItem('dmv-q-bookmarks');
+            updateScoreStats();
+            renderCurrentQuestion();
         }
     };
 
-    document.getElementById('quiz-options')?.addEventListener('click', (e) => {
-        const optionBtn = e.target.closest('.option');
-        if (optionBtn && !optionBtn.disabled && quizSession) {
-            const index = parseInt(optionBtn.dataset.index, 10);
-            selectOptionByIndex(index);
-        }
-    });
+    // --- Question Map Modal (1-120) ---
+    const openQuestionMap = () => {
+        const modal = document.getElementById('question-map-modal');
+        const grid = document.getElementById('question-map-grid');
+        if (!modal || !grid) return;
 
-    document.getElementById('btn-next')?.addEventListener('click', advanceNextQuestion);
+        grid.innerHTML = '';
+        const currentQ = getCurrentQuestion();
 
-    document.getElementById('btn-quit-quiz')?.addEventListener('click', () => {
-        if (confirm('Are you sure you want to exit your current test session?')) {
-            stopTimer();
-            quizSession = null;
-            updateHomeStats();
-            window.UI.showScreen('screen-home');
-        }
-    });
+        allQuestions.forEach((q, idx) => {
+            const bubble = document.createElement('button');
+            bubble.className = 'q-bubble';
+            bubble.textContent = q.id.toString();
 
-    // Results Actions
-    document.getElementById('btn-review')?.addEventListener('click', () => {
-        if (quizSession) {
-            const results = quizSession.getResults();
-            window.UI.renderReview(results.missedQuestions);
-            window.UI.showScreen('screen-review');
-        }
-    });
-
-    document.getElementById('btn-retry')?.addEventListener('click', () => {
-        if (!quizSession) return;
-        const wasExam = quizSession.isExamMode;
-        const cats = quizSession.selectedCategories;
-        
-        quizSession = new window.QuizSession(typeof QUESTIONS !== 'undefined' ? QUESTIONS : [], currentMode);
-        quizSession.start(cats, wasExam);
-        window.UI.renderQuiz(quizSession.getCurrentQuestion(), quizSession.getProgress(), quizSession.getTimeElapsed(), wasExam);
-        window.UI.showScreen('screen-quiz');
-        if (wasExam) {
-            startTimer();
-        } else {
-            stopTimer();
-        }
-    });
-
-    document.getElementById('btn-home')?.addEventListener('click', () => {
-        updateHomeStats();
-        window.UI.showScreen('screen-home');
-    });
-
-    document.getElementById('btn-review-back')?.addEventListener('click', () => {
-        window.UI.showScreen('screen-results');
-    });
-
-    // Study Bank Filters & Search
-    document.getElementById('study-search')?.addEventListener('input', (e) => {
-        studySearch = e.target.value;
-        if (typeof QUESTIONS !== 'undefined') {
-            window.UI.renderStudyBank(QUESTIONS, studyCategory, studySearch);
-        }
-    });
-
-    document.getElementById('study-category-filters')?.addEventListener('click', (e) => {
-        const pill = e.target.closest('.filter-pill');
-        if (pill) {
-            document.querySelectorAll('#study-category-filters .filter-pill').forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
-            studyCategory = pill.dataset.cat;
-            if (typeof QUESTIONS !== 'undefined') {
-                window.UI.renderStudyBank(QUESTIONS, studyCategory, studySearch);
+            const ans = answers[q.id];
+            if (ans) {
+                bubble.classList.add(ans.isCorrect ? 'correct' : 'incorrect');
             }
+            if (bookmarks.has(q.id)) {
+                bubble.classList.add('flagged');
+            }
+            if (currentQ && currentQ.id === q.id) {
+                bubble.classList.add('current');
+            }
+
+            bubble.addEventListener('click', () => {
+                jumpToQuestionById(q.id);
+            });
+
+            grid.appendChild(bubble);
+        });
+
+        modal.style.display = 'flex';
+    };
+
+    const closeQuestionMap = () => {
+        const modal = document.getElementById('question-map-modal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    // --- Full List / Study Mode View ---
+    const renderFullList = (query = '') => {
+        const container = document.getElementById('full-questions-container');
+        const countEl = document.getElementById('list-count-display');
+        if (!container) return;
+
+        let filtered = currentFiltered;
+        if (query && query.trim() !== '') {
+            const qLower = query.toLowerCase().trim();
+            filtered = filtered.filter(item => 
+                item.text.toLowerCase().includes(qLower) ||
+                item.explanation.toLowerCase().includes(qLower) ||
+                item.options.some(opt => opt.toLowerCase().includes(qLower))
+            );
+        }
+
+        if (countEl) {
+            countEl.textContent = `Showing ${filtered.length} of ${allQuestions.length} questions`;
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="card" style="text-align:center;"><p>No questions matched your search criteria.</p></div>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(q => {
+            const illuHtml = window.Illustrations ? window.Illustrations.get(q) : '';
+            html += `
+                <div class="list-q-card">
+                    <div class="list-q-header">
+                        <span class="badge badge-category">${q.category}</span>
+                        <span style="font-size:0.85rem; font-weight:800; color:var(--text-muted);">Question #${q.id}</span>
+                    </div>
+                    ${illuHtml}
+                    <h3 style="font-size:1.15rem; margin-bottom:12px; font-weight:700;">${q.text}</h3>
+                    <div class="options-grid">
+            `;
+
+            q.options.forEach((opt, optIdx) => {
+                const isCorrect = optIdx === q.correctIndex;
+                html += `
+                    <div class="option-btn ${isCorrect ? 'correct' : ''}" style="cursor:default;">
+                        <span class="opt-key">${optIdx + 1}</span>
+                        <span class="opt-text">${opt} ${isCorrect ? '✓ (Correct)' : ''}</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <div class="feedback-panel" style="display:block; margin-top:12px;">
+                        <p class="feedback-body"><strong>💡 Handbook Explanation:</strong> ${q.explanation}</p>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    };
+
+    const toggleViewMode = () => {
+        const singleView = document.getElementById('single-question-view');
+        const listView = document.getElementById('full-list-view');
+        const toggleBtnText = document.getElementById('view-toggle-text');
+
+        if (viewMode === 'single') {
+            viewMode = 'list';
+            if (singleView) singleView.style.display = 'none';
+            if (listView) listView.style.display = 'block';
+            if (toggleBtnText) toggleBtnText.textContent = '🎯 Single Question';
+            renderFullList();
+        } else {
+            viewMode = 'single';
+            if (singleView) singleView.style.display = 'block';
+            if (listView) listView.style.display = 'none';
+            if (toggleBtnText) toggleBtnText.textContent = '📖 List View';
+            renderCurrentQuestion();
+        }
+    };
+
+    // --- Event Listeners Setup ---
+    document.getElementById('brand-home')?.addEventListener('click', () => {
+        filterQuestions('all');
+        if (viewMode === 'list') toggleViewMode();
+    });
+
+    document.getElementById('category-pills')?.addEventListener('click', (e) => {
+        const pill = e.target.closest('.cat-pill');
+        if (pill) {
+            filterQuestions(pill.dataset.cat);
         }
     });
 
-    document.getElementById('btn-print-study')?.addEventListener('click', () => {
+    document.getElementById('q-options')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.option-btn');
+        if (btn && !btn.disabled) {
+            const optIdx = parseInt(btn.dataset.index, 10);
+            handleSelectOption(optIdx);
+        }
+    });
+
+    document.getElementById('btn-next-q')?.addEventListener('click', nextQuestion);
+    document.getElementById('btn-prev-q')?.addEventListener('click', prevQuestion);
+    document.getElementById('btn-random-q')?.addEventListener('click', randomQuestion);
+    document.getElementById('btn-bookmark')?.addEventListener('click', toggleBookmarkCurrent);
+    document.getElementById('btn-reset-current')?.addEventListener('click', resetCurrentAnswer);
+    document.getElementById('btn-clear-progress')?.addEventListener('click', clearAllProgress);
+
+    document.getElementById('btn-toggle-grid')?.addEventListener('click', openQuestionMap);
+    document.getElementById('btn-close-map')?.addEventListener('click', closeQuestionMap);
+    document.getElementById('question-map-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'question-map-modal') closeQuestionMap();
+    });
+
+    document.getElementById('btn-toggle-view')?.addEventListener('click', toggleViewMode);
+    document.getElementById('list-search-input')?.addEventListener('input', (e) => {
+        renderFullList(e.target.value);
+    });
+    document.getElementById('btn-print-list')?.addEventListener('click', () => {
         window.print();
     });
 
-    // History Actions
-    document.getElementById('btn-clear-history')?.addEventListener('click', () => {
-        if (confirm('Are you sure you want to clear your test history?')) {
-            localStorage.removeItem('dmv-scores');
-            showHistory();
-            updateHomeStats();
-        }
-    });
-
-    // Desktop Keyboard Shortcuts
+    // --- Keyboard Navigation (Desktop / Web) ---
     document.addEventListener('keydown', (e) => {
-        // If user is typing in a search input, don't trigger quiz hotkeys
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        const modal = document.getElementById('question-map-modal');
+        if (modal && modal.style.display === 'flex') {
+            if (e.key === 'Escape') closeQuestionMap();
             return;
         }
 
-        const quizScreen = document.getElementById('screen-quiz');
-        const isQuizActive = quizScreen && quizScreen.classList.contains('active');
-
-        if (isQuizActive) {
-            // Keys 1, 2, 3, 4
+        if (viewMode === 'single') {
+            // Option 1-4
             if (['1', '2', '3', '4'].includes(e.key)) {
-                const idx = parseInt(e.key, 10) - 1;
-                selectOptionByIndex(idx);
+                const optIdx = parseInt(e.key, 10) - 1;
+                handleSelectOption(optIdx);
                 e.preventDefault();
             }
-            // Keys A, B, C, D (or a, b, c, d)
+            // Option A-D
             else if (['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].includes(e.key)) {
                 const keyMap = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                const idx = keyMap[e.key];
-                if (typeof idx === 'number') {
-                    selectOptionByIndex(idx);
+                const optIdx = keyMap[e.key];
+                if (typeof optIdx === 'number') {
+                    handleSelectOption(optIdx);
                     e.preventDefault();
                 }
             }
-            // Enter or Spacebar advances to next question when answered
-            else if (e.key === 'Enter' || e.key === ' ') {
-                const feedbackEl = document.getElementById('quiz-feedback');
-                if (feedbackEl && feedbackEl.style.display !== 'none') {
-                    advanceNextQuestion();
-                    e.preventDefault();
-                }
+            // Next Question
+            else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+                nextQuestion();
+                e.preventDefault();
             }
-        }
-
-        // Global Escape to return Home
-        if (e.key === 'Escape') {
-            const homeScreen = document.getElementById('screen-home');
-            if (homeScreen && !homeScreen.classList.contains('active')) {
-                if (isQuizActive) {
-                    if (confirm('Return to dashboard? Current quiz session will be closed.')) {
-                        stopTimer();
-                        updateHomeStats();
-                        window.UI.showScreen('screen-home');
-                    }
-                } else {
-                    updateHomeStats();
-                    window.UI.showScreen('screen-home');
-                }
+            // Previous Question
+            else if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
+                prevQuestion();
+                e.preventDefault();
+            }
+            // Bookmark Flag
+            else if (e.key === 'f' || e.key === 'F' || e.key === 'b' || e.key === 'B') {
+                toggleBookmarkCurrent();
+                e.preventDefault();
+            }
+            // Random Question
+            else if (e.key === 'r' || e.key === 'R') {
+                randomQuestion();
+                e.preventDefault();
+            }
+            // Open Map
+            else if (e.key === 'm' || e.key === 'M') {
+                openQuestionMap();
+                e.preventDefault();
             }
         }
     });
 
-    // Initial Load
-    updateModeButtons();
-    updateHomeStats();
-    window.UI.showScreen('screen-home');
+    // Initial Render
+    updateScoreStats();
+    renderCurrentQuestion();
 });
