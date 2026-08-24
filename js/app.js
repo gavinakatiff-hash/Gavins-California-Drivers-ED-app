@@ -1,16 +1,17 @@
-// Gavin's Applications Directory & Adaptive California DMV Question Engine
+// Gavin's Applications Directory & Mobile-Oriented Adaptive DMV Engine
 document.addEventListener('DOMContentLoaded', () => {
     // --- State Initialization ---
     const allQuestions = typeof QUESTIONS !== 'undefined' ? QUESTIONS : [];
     const appsDirectory = typeof APPS_DIRECTORY !== 'undefined' ? APPS_DIRECTORY : [];
     
-    // Initialize Adaptive Spaced-Repetition Recommendation Engine
+    // Initialize Adaptive Recommendation Engine
     const adaptiveEngine = typeof AdaptiveRecommendationEngine !== 'undefined'
         ? new AdaptiveRecommendationEngine(allQuestions)
         : null;
 
     let currentIndex = 0;
     let currentAppView = 'directory'; // 'directory' | 'dmv'
+    let currentDmvSubView = 'question'; // 'question' | 'feedback'
 
     // Load persisted state
     let answers = {};
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 reg.update();
             }
         });
-        navigator.serviceWorker.register('./sw.js?v=20260824').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=20260824_v2').then(reg => {
             reg.update();
         }).catch(err => console.log('SW failed:', err));
     }
@@ -65,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
     initTheme();
 
-    // --- View Routing ---
+    // --- Top-Level View Routing (Directory vs DMV) ---
     const switchAppView = (targetView) => {
         currentAppView = targetView;
         const dirView = document.getElementById('view-directory');
@@ -82,14 +83,40 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (dirView) dirView.style.display = 'none';
             if (dmvView) dmvView.style.display = 'block';
-            // Hide the global header completely for a distraction-free question interface
+            // Hide the global header completely for distraction-free mobile screen
             if (globalNavbar) globalNavbar.style.display = 'none';
 
             window.location.hash = 'dmv';
-            renderCurrentQuestion();
+            
+            // Check if current question was already answered -> show feedback screen, else question screen
+            const currentQ = allQuestions[currentIndex];
+            if (currentQ && answers[currentQ.id]) {
+                const ans = answers[currentQ.id];
+                showFeedbackScreen(currentQ, ans.selectedIndex, ans.isCorrect);
+            } else {
+                switchDmvSubView('question');
+                renderCurrentQuestion();
+            }
         }
 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+
+    // --- DMV Subview Routing (Question Screen vs Feedback Screen) ---
+    const switchDmvSubView = (subView) => {
+        currentDmvSubView = subView;
+        const qScreen = document.getElementById('dmv-screen-question');
+        const fbScreen = document.getElementById('dmv-screen-feedback');
+
+        if (subView === 'question') {
+            if (qScreen) qScreen.style.display = 'block';
+            if (fbScreen) fbScreen.style.display = 'none';
+        } else {
+            if (qScreen) qScreen.style.display = 'none';
+            if (fbScreen) fbScreen.style.display = 'block';
+        }
+
+        window.scrollTo({ top: 0, behavior: 'instant' });
     };
 
     // --- Render Directory Page ---
@@ -109,9 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
 
-        if (countBadge) {
-            countBadge.textContent = `${list.length} Apps Available`;
-        }
+        if (countBadge) countBadge.textContent = `${list.length} Apps Available`;
 
         if (list.length === 0) {
             container.innerHTML = `<div class="card" style="text-align:center; grid-column:1/-1;"><p>No applications matched your search.</p></div>`;
@@ -174,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Live Accuracy Calculation (Adaptive Stats + Session) ---
+    // --- Live Accuracy Calculation ---
     const updateAccuracyDisplay = () => {
         let pct = 100;
         let correctCount = 0;
@@ -193,33 +218,29 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const pctEl = document.getElementById('accuracy-percentage');
         const fracEl = document.getElementById('accuracy-fraction');
+        const fbPctEl = document.getElementById('fb-accuracy-pct');
 
         if (pctEl) {
             pctEl.textContent = `${pct}%`;
             pctEl.style.color = pct >= 80 ? 'var(--orange)' : 'var(--red)';
         }
-        if (fracEl) {
-            fracEl.textContent = `(${correctCount}/${totalCount})`;
-        }
+        if (fracEl) fracEl.textContent = `(${correctCount}/${totalCount})`;
+        if (fbPctEl) fbPctEl.textContent = `${pct}%`;
     };
 
-    // --- Render Simplified Question with Adaptive Tagging ---
+    // --- Render Compact Question View (Screen 1) ---
     const renderCurrentQuestion = () => {
         const question = allQuestions[currentIndex];
         const numBadge = document.getElementById('q-number-badge');
         const illuBox = document.getElementById('q-illustration');
         const titleEl = document.getElementById('q-text');
         const optionsEl = document.getElementById('q-options');
-        const feedbackEl = document.getElementById('q-feedback');
         const adaptiveTag = document.getElementById('q-adaptive-tag');
-        const redditTipBox = document.getElementById('reddit-tip-box');
 
         if (!question) return;
 
-        // Progress counter (Question ID)
-        if (numBadge) {
-            numBadge.textContent = `Question #${question.id} (of 120)`;
-        }
+        // Progress counter
+        if (numBadge) numBadge.textContent = `#${question.id} / 120`;
 
         // Live Accuracy
         updateAccuracyDisplay();
@@ -236,35 +257,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Vector Visual Illustration
+        // Vector Visual Illustration (No Giveaway Text)
         if (illuBox && window.Illustrations) {
             illuBox.innerHTML = window.Illustrations.get(question);
         }
 
         // Question Title
-        if (titleEl) {
-            titleEl.textContent = question.text;
-        }
+        if (titleEl) titleEl.textContent = question.text;
 
         // 4 Options
         if (optionsEl) {
             optionsEl.innerHTML = '';
-            const existingAnswer = answers[question.id];
-
             question.options.forEach((opt, optIdx) => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.dataset.index = optIdx;
-
-                if (existingAnswer) {
-                    btn.disabled = true;
-                    if (optIdx === question.correctIndex) {
-                        btn.classList.add('correct');
-                    }
-                    if (optIdx === existingAnswer.selectedIndex && !existingAnswer.isCorrect) {
-                        btn.classList.add('incorrect');
-                    }
-                }
 
                 btn.innerHTML = `
                     <span class="opt-key">${optIdx + 1}</span>
@@ -274,53 +281,100 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Feedback Explanation & Reddit Callout
-        const existingAnswer = answers[question.id];
-        if (feedbackEl) {
-            if (existingAnswer) {
-                feedbackEl.style.display = 'block';
-                const fBadge = document.getElementById('feedback-badge');
-                const fExp = document.getElementById('feedback-explanation');
-                if (fBadge) {
-                    fBadge.textContent = existingAnswer.isCorrect ? '✓ Correct Answer!' : '✗ Incorrect';
-                    fBadge.style.background = existingAnswer.isCorrect ? 'var(--green-bg)' : 'var(--red-bg)';
-                    fBadge.style.color = existingAnswer.isCorrect ? 'var(--green)' : 'var(--red)';
-                }
-                if (fExp) {
-                    fExp.innerHTML = `<strong>💡 California Driver Handbook:</strong> ${question.explanation}`;
-                }
-
-                // Reddit Trap Advice Callout
-                if (redditTipBox && adaptiveEngine) {
-                    const badgeInfo = adaptiveEngine.getQuestionBadgeInfo(question.id);
-                    if (badgeInfo.tip) {
-                        redditTipBox.innerHTML = `<strong>⚠️ Community Insight:</strong> ${badgeInfo.tip}`;
-                        redditTipBox.style.display = 'block';
-                    } else {
-                        redditTipBox.style.display = 'none';
-                    }
-                }
-            } else {
-                feedbackEl.style.display = 'none';
-                if (redditTipBox) redditTipBox.style.display = 'none';
-            }
-        }
-
-        // Update Prev / Next buttons
+        // Update Prev button disabled
         const prevBtn = document.getElementById('btn-prev-q');
-        const nextBtn = document.getElementById('btn-next-q');
         if (prevBtn) prevBtn.disabled = currentIndex <= 0;
-        if (nextBtn) nextBtn.textContent = 'Next Question →';
 
         saveState();
     };
 
-    // --- Option Selection Handler (Records into Adaptive Engine & Triggers Radical FX) ---
+    // --- Show Dedicated Feedback Screen (Screen 2) ---
+    const showFeedbackScreen = (question, userSelectedIdx, isCorrect) => {
+        const fbScreen = document.getElementById('dmv-screen-feedback');
+        const fbProgress = document.getElementById('fb-q-progress');
+        const fbBanner = document.getElementById('fb-status-banner');
+        const fbIcon = document.getElementById('fb-hero-icon');
+        const fbTitle = document.getElementById('fb-hero-title');
+        const fbSubtitle = document.getElementById('fb-hero-subtitle');
+        const fbQText = document.getElementById('fb-question-text');
+        const fbUserRow = document.getElementById('fb-user-choice-row');
+        const fbUserText = document.getElementById('fb-user-choice-text');
+        const fbCorrectRow = document.getElementById('fb-correct-choice-row');
+        const fbCorrectText = document.getElementById('fb-correct-choice-text');
+        const fbExpText = document.getElementById('fb-explanation-text');
+        const fbRedditTip = document.getElementById('fb-reddit-tip');
+
+        if (!question) return;
+
+        // Header Progress
+        if (fbProgress) fbProgress.textContent = `Question #${question.id} (of 120)`;
+        updateAccuracyDisplay();
+
+        // Banner Status
+        if (fbBanner) {
+            if (isCorrect) {
+                fbBanner.className = 'fb-hero-banner fb-hero-correct';
+                if (fbIcon) fbIcon.textContent = '🎉';
+                if (fbTitle) fbTitle.textContent = 'Correct!';
+                if (fbSubtitle) fbSubtitle.textContent = 'Awesome! You mastered this California DMV rule.';
+            } else {
+                fbBanner.className = 'fb-hero-banner fb-hero-wrong';
+                if (fbIcon) fbIcon.textContent = '❌';
+                if (fbTitle) fbTitle.textContent = 'Incorrect';
+                if (fbSubtitle) fbSubtitle.textContent = "Don't worry! Review the handbook rule below.";
+            }
+        }
+
+        // Question text
+        if (fbQText) fbQText.textContent = question.text;
+
+        // User Selected Answer
+        if (fbUserRow && fbUserText) {
+            const userChoiceText = question.options[userSelectedIdx] || 'None';
+            fbUserText.textContent = `${userSelectedIdx + 1}. ${userChoiceText}`;
+            fbUserRow.className = `fb-choice-box ${isCorrect ? 'user-correct' : 'user-wrong'}`;
+        }
+
+        // Correct Answer (shown if wrong)
+        if (fbCorrectRow && fbCorrectText) {
+            if (!isCorrect) {
+                const correctChoiceText = question.options[question.correctIndex];
+                fbCorrectText.textContent = `${question.correctIndex + 1}. ${correctChoiceText}`;
+                fbCorrectRow.style.display = 'block';
+            } else {
+                fbCorrectRow.style.display = 'none';
+            }
+        }
+
+        // Explanation
+        if (fbExpText) fbExpText.textContent = question.explanation;
+
+        // Reddit Community Insight
+        if (fbRedditTip && adaptiveEngine) {
+            const badgeInfo = adaptiveEngine.getQuestionBadgeInfo(question.id);
+            if (badgeInfo.tip) {
+                fbRedditTip.innerHTML = `<strong>⚠️ Community Insight:</strong> ${badgeInfo.tip}`;
+                fbRedditTip.style.display = 'block';
+            } else {
+                fbRedditTip.style.display = 'none';
+            }
+        }
+
+        // Switch to the dedicated Feedback View
+        switchDmvSubView('feedback');
+    };
+
+    // --- Option Selection Handler (Triggers 4-Corner Sparks & Auto-Switches Screen) ---
     const handleSelectOption = (optIdx, targetButton = null) => {
         const question = allQuestions[currentIndex];
         if (!question) return;
 
-        if (answers[question.id]) return;
+        // If already answered, don't re-trigger
+        if (answers[question.id]) {
+            const ans = answers[question.id];
+            showFeedbackScreen(question, ans.selectedIndex, ans.isCorrect);
+            return;
+        }
 
         const isCorrect = optIdx === question.correctIndex;
         answers[question.id] = {
@@ -329,29 +383,34 @@ document.addEventListener('DOMContentLoaded', () => {
             date: Date.now()
         };
 
-        // Record into Adaptive Spaced Repetition Engine
+        // Record into Adaptive Engine
         if (adaptiveEngine) {
             adaptiveEngine.recordAttempt(question.id, isCorrect);
         }
 
         saveState();
-        renderCurrentQuestion();
 
-        // Trigger Radical Animations & Sound Particle Bursts
+        // 🎆 1. Launch 4-Corner Mega Spark Fireworks & Sound Animations
         const btn = targetButton || document.querySelector(`.option-btn[data-index="${optIdx}"]`);
         if (btn && window.RadicalFX) {
             if (isCorrect) {
+                btn.classList.add('correct');
                 window.RadicalFX.celebrateCorrect(btn);
             } else {
+                btn.classList.add('incorrect');
                 window.RadicalFX.celebrateWrong(btn);
             }
         }
+
+        // 🚀 2. Automatically navigate to the Feedback Screen after 500ms particle burst
+        setTimeout(() => {
+            showFeedbackScreen(question, optIdx, isCorrect);
+        }, 550);
     };
 
-    // --- Adaptive Next Question Handler (Weighted Selection) ---
+    // --- Next Question Handler ---
     const nextQuestion = () => {
         if (allQuestions.length === 0) return;
-
         const currentQ = allQuestions[currentIndex];
         
         if (adaptiveEngine) {
@@ -361,18 +420,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const foundIdx = allQuestions.findIndex(q => q.id === nextQ.id);
                 if (foundIdx !== -1) {
                     currentIndex = foundIdx;
+                    switchDmvSubView('question');
                     renderCurrentQuestion();
                     return;
                 }
             }
         }
 
-        // Fallback sequential increment
         if (currentIndex < allQuestions.length - 1) {
             currentIndex++;
         } else {
             currentIndex = 0;
         }
+
+        switchDmvSubView('question');
         renderCurrentQuestion();
     };
 
@@ -383,6 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             currentIndex = allQuestions.length - 1;
         }
+        switchDmvSubView('question');
         renderCurrentQuestion();
     };
 
@@ -391,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!q) return;
         delete answers[q.id];
         saveState();
+        switchDmvSubView('question');
         renderCurrentQuestion();
     };
 
@@ -408,47 +471,64 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDirectory(e.target.value);
     });
 
+    // Question options click (Instant Answer)
     document.getElementById('q-options')?.addEventListener('click', (e) => {
         const btn = e.target.closest('.option-btn');
-        if (btn && !btn.disabled) {
+        if (btn) {
             const optIdx = parseInt(btn.dataset.index, 10);
             handleSelectOption(optIdx, btn);
         }
     });
 
-    document.getElementById('btn-next-q')?.addEventListener('click', nextQuestion);
     document.getElementById('btn-prev-q')?.addEventListener('click', prevQuestion);
-    document.getElementById('btn-reset-current')?.addEventListener('click', resetCurrentAnswer);
+    document.getElementById('btn-skip-q')?.addEventListener('click', nextQuestion);
+
+    // Feedback Screen Buttons
+    document.getElementById('btn-next-from-feedback')?.addEventListener('click', nextQuestion);
+    document.getElementById('btn-retry-from-feedback')?.addEventListener('click', resetCurrentAnswer);
+    document.getElementById('btn-feedback-back-to-q')?.addEventListener('click', () => {
+        switchDmvSubView('question');
+    });
 
     // --- Keyboard Navigation ---
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
         if (currentAppView === 'dmv') {
-            if (['1', '2', '3', '4'].includes(e.key)) {
-                const optIdx = parseInt(e.key, 10) - 1;
-                handleSelectOption(optIdx);
-                e.preventDefault();
-            }
-            else if (['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].includes(e.key)) {
-                const keyMap = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                const optIdx = keyMap[e.key];
-                if (typeof optIdx === 'number') {
+            if (currentDmvSubView === 'question') {
+                if (['1', '2', '3', '4'].includes(e.key)) {
+                    const optIdx = parseInt(e.key, 10) - 1;
                     handleSelectOption(optIdx);
                     e.preventDefault();
                 }
-            }
-            else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
-                nextQuestion();
-                e.preventDefault();
-            }
-            else if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
-                prevQuestion();
-                e.preventDefault();
-            }
-            else if (e.key === 'Escape') {
-                switchAppView('directory');
-                e.preventDefault();
+                else if (['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].includes(e.key)) {
+                    const keyMap = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                    const optIdx = keyMap[e.key];
+                    if (typeof optIdx === 'number') {
+                        handleSelectOption(optIdx);
+                        e.preventDefault();
+                    }
+                }
+                else if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
+                    prevQuestion();
+                    e.preventDefault();
+                }
+                else if (e.key === 'Escape') {
+                    switchAppView('directory');
+                    e.preventDefault();
+                }
+            } else if (currentDmvSubView === 'feedback') {
+                // On feedback screen, Enter / Space / ArrowRight instantly advances to next question!
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
+                    nextQuestion();
+                    e.preventDefault();
+                } else if (e.key === 'r' || e.key === 'R') {
+                    resetCurrentAnswer();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+                    switchDmvSubView('question');
+                    e.preventDefault();
+                }
             }
         }
     });
