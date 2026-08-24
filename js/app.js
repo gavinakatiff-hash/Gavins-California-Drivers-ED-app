@@ -22,9 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error loading saved state', e);
     }
 
-    // Register Service Worker
+    // Register and Force-Update Service Worker
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed:', err));
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let reg of registrations) {
+                reg.update();
+            }
+        });
+        navigator.serviceWorker.register('./sw.js?v=20260824').then(reg => {
+            reg.update();
+        }).catch(err => console.log('SW failed:', err));
     }
 
     // --- Theme Management ---
