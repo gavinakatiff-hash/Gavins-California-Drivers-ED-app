@@ -375,13 +375,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const question = allQuestions[currentIndex];
         if (!question) return;
 
-        // If already answered, don't re-trigger
-        if (answers[question.id]) {
-            const ans = answers[question.id];
-            showFeedbackScreen(question, ans.selectedIndex, ans.isCorrect);
-            return;
-        }
-
         const isCorrect = optIdx === question.correctIndex;
         answers[question.id] = {
             selectedIndex: optIdx,
@@ -397,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
 
         // 🎆 1. Launch 4-Corner Mega Spark Fireworks & Sound Animations
-        const btn = targetButton || document.querySelector(`.option-btn[data-index="${optIdx}"]`);
+        const btn = targetButton || document.querySelector(`.compact-options-grid .option-btn[data-index="${optIdx}"]`);
         if (btn && window.RadicalFX) {
             if (isCorrect) {
                 btn.classList.add('correct');
@@ -408,10 +401,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 🚀 2. Automatically navigate to the Feedback Screen after 500ms particle burst
+        // 🚀 2. Automatically navigate to the Feedback Screen after animation burst
         setTimeout(() => {
             showFeedbackScreen(question, optIdx, isCorrect);
-        }, 550);
+        }, isCorrect ? 480 : 550);
     };
 
     // --- Next Question Handler ---
